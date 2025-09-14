@@ -11,13 +11,16 @@ MIN_SDK=${minSdk:-21}
 TARGET_SDK=${targetSdk:-34}
 COMPILE_SDK=${compileSdk:-34}
 
-# Создаём структуру
-mkdir -p app/src/main/java/com/example/yourapp
+# Преобразуем package=com.anpsoft.runcommandservice → path=com/anpsoft/runcommandservice
+JAVA_PATH=$(echo "$PACKAGE" | tr '.' '/')
+
+# Создаём структуру с динамическим путём
+mkdir -p app/src/main/java/$JAVA_PATH
 mkdir -p gradle/wrapper
 
-# ✅ КОПИРУЕМ МАНИФЕСТ — ЭТО КЛЮЧЕВОЙ ШАГ!
+# Копируем твои файлы в нужные места
 cp ../AndroidManifest.xml app/src/main/
-cp ../MainActivity.kt app/src/main/java/com/example/yourapp/
+cp ../MainActivity.kt app/src/main/java/$JAVA_PATH/
 
 # Скачиваем Gradle Wrapper
 curl -o gradlew https://raw.githubusercontent.com/gradle/gradle/master/gradlew
@@ -27,7 +30,7 @@ curl -o gradle/wrapper/gradle-wrapper.properties https://raw.githubusercontent.c
 
 chmod +x gradlew
 
-# Генерируем build.gradle с твоими настройками
+# Генерируем build.gradle — используя PACKAGE из app.ini
 cat > app/build.gradle << 'EOF'
 plugins {
     id 'com.android.application' version '8.4.0'
@@ -35,15 +38,15 @@ plugins {
 }
 
 android {
-    namespace 'com.example.yourapp'
-    compileSdk 34
+    namespace '___NAMESPACE___'
+    compileSdk ___COMPILE_SDK___
 
     defaultConfig {
-        applicationId "com.example.yourapp"
-        minSdk 21
-        targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        applicationId '___PACKAGE___'
+        minSdk ___MIN_SDK___
+        targetSdk ___TARGET_SDK___
+        versionCode ___VERSION_CODE___
+        versionName "___VERSION_NAME___"
     }
 
     buildTypes {
@@ -73,14 +76,14 @@ dependencies {
 }
 EOF
 
-# Заменяем шаблоны на реальные значения
-sed -i "s|namespace 'com.example.yourapp'|namespace '$PACKAGE'|g" app/build.gradle
-sed -i "s|compileSdk 34|compileSdk $COMPILE_SDK|g" app/build.gradle
-sed -i "s|applicationId \"com.example.yourapp\"|applicationId \"$PACKAGE\"|g" app/build.gradle
-sed -i "s|minSdk 21|minSdk $MIN_SDK|g" app/build.gradle
-sed -i "s|targetSdk 34|targetSdk $TARGET_SDK|g" app/build.gradle
-sed -i "s|versionCode 1|versionCode $VERSION_CODE|g" app/build.gradle
-sed -i "s|versionName \"1.0\"|versionName \"$VERSION_NAME\"|g" app/build.gradle
+# Подставляем реальные значения
+sed -i "s|___NAMESPACE___|$PACKAGE|g" app/build.gradle
+sed -i "s|___COMPILE_SDK___|$COMPILE_SDK|g" app/build.gradle
+sed -i "s|___PACKAGE___|$PACKAGE|g" app/build.gradle
+sed -i "s|___MIN_SDK___|$MIN_SDK|g" app/build.gradle
+sed -i "s|___TARGET_SDK___|$TARGET_SDK|g" app/build.gradle
+sed -i "s|___VERSION_CODE___|$VERSION_CODE|g" app/build.gradle
+sed -i "s|___VERSION_NAME___|$VERSION_NAME|g" app/build.gradle
 
 # Генерируем settings.gradle
 cat > settings.gradle << 'EOF'
@@ -102,5 +105,6 @@ echo "android.useAndroidX=true" > gradle.properties
 # Готово
 echo "✅ Сборка инициализирована из app.ini"
 echo "   Package: $PACKAGE"
+echo "   Path:    java/$JAVA_PATH"
 echo "   Version: $VERSION_NAME ($VERSION_CODE)"
-echo "   SDK: $MIN_SDK → $TARGET_SDK / $COMPILE_SDK"
+echo "   SDK:     $MIN_SDK → $TARGET_SDK / $COMPILE_SDK"
