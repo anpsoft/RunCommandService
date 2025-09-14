@@ -1,0 +1,5 @@
+MainActivity.kt (в корне)
+AndroidManifest.xml (в корне)
+app/build.gradle (в папке app/, Gradle требует)
+.github/workflows/build.yml (для GitHub Actions)
+
