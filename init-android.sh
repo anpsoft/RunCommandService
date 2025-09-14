@@ -1,12 +1,10 @@
 #!/bin/bash
 
-mkdir -p app/src/main/java/com/example/runcommandservice
-mkdir -p app/src/main/res/values
+mkdir -p app/src/main/java/com/example/yourapp
 mkdir -p gradle/wrapper
 
 cp AndroidManifest.xml app/src/main/
-cp MainActivity.kt app/src/main/java/com/example/runcommandservice/
-cp list app/src/main/res/values/ || cp list app/src/main/assets/
+cp MainActivity.kt app/src/main/java/com/example/yourapp/
 
 curl -o gradlew https://raw.githubusercontent.com/gradle/gradle/master/gradlew
 curl -o gradlew.bat https://raw.githubusercontent.com/gradle/gradle/master/gradlew.bat
@@ -24,11 +22,9 @@ plugins {
 }
 
 android {
-    namespace 'com.example.runcommandservice'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.example.runcommandservice"
         minSdk 24
         targetSdk 34
         versionCode 1
@@ -71,6 +67,6 @@ pluginManagement {
     }
 }
 
-rootProject.name = "RunCommandService"
+rootProject.name = "UnnamedProject"
 include ':app'
 EOF
