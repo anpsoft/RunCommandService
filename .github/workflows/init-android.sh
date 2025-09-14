@@ -18,7 +18,8 @@ JAVA_PATH=$(echo "$PACKAGE" | tr '.' '/')
 mkdir -p app/src/main/java/$JAVA_PATH
 mkdir -p gradle/wrapper
 
-# Копируем твои файлы в нужные места
+# ✅ ИСПРАВЛЕНИЕ: создаём папку app/src/main, потом копируем туда манифест
+mkdir -p app/src/main
 cp ../AndroidManifest.xml app/src/main/
 cp ../MainActivity.kt app/src/main/java/$JAVA_PATH/
 
