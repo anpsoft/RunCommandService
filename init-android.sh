@@ -17,8 +17,8 @@ chmod +x gradlew
 
 cat > app/build.gradle << 'EOF'
 plugins {
-    id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
+    id 'com.android.application' version '8.4.0'
+    id 'org.jetbrains.kotlin.android' version '1.9.22'
 }
 
 android {
@@ -27,7 +27,7 @@ android {
 
     defaultConfig {
         applicationId "com.example.runcommandservice"
-        minSdk 21
+        minSdk 24
         targetSdk 34
         versionCode 1
         versionName "1.0"
@@ -55,7 +55,6 @@ dependencies {
 }
 EOF
 
-# ✅ КЛЮЧЕВАЯ СТРОКА — ДОБАВЛЯЕМ РЕПОЗИТОРИЙ ДЛЯ ANDROID ПЛАГИНОВ
 cat > settings.gradle << 'EOF'
 pluginManagement {
     repositories {
@@ -68,4 +67,3 @@ pluginManagement {
 rootProject.name = "RunCommandService"
 include ':app'
 EOF
-
