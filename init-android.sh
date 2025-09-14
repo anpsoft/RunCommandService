@@ -13,6 +13,8 @@ curl -o gradlew.bat https://raw.githubusercontent.com/gradle/gradle/master/gradl
 curl -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar
 curl -o gradle/wrapper/gradle-wrapper.properties https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.properties
 
+echo "android.useAndroidX=true" > gradle.properties
+
 chmod +x gradlew
 
 cat > app/build.gradle << 'EOF'
@@ -47,7 +49,6 @@ android {
         jvmTarget = '1.8'
     }
 
-    // ✅ ТУТ — внутри android {} — только так работает!
     repositories {
         google()
         mavenCentral()
