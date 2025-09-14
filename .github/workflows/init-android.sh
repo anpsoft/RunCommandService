@@ -15,7 +15,7 @@ COMPILE_SDK=${compileSdk:-34}
 mkdir -p app/src/main/java/com/example/yourapp
 mkdir -p gradle/wrapper
 
-# Копируем твои файлы
+# ✅ КОПИРУЕМ МАНИФЕСТ — ЭТО КЛЮЧЕВОЙ ШАГ!
 cp ../AndroidManifest.xml app/src/main/
 cp ../MainActivity.kt app/src/main/java/com/example/yourapp/
 
@@ -73,7 +73,7 @@ dependencies {
 }
 EOF
 
-# Подставляем реальные значения из app.ini
+# Заменяем шаблоны на реальные значения
 sed -i "s|namespace 'com.example.yourapp'|namespace '$PACKAGE'|g" app/build.gradle
 sed -i "s|compileSdk 34|compileSdk $COMPILE_SDK|g" app/build.gradle
 sed -i "s|applicationId \"com.example.yourapp\"|applicationId \"$PACKAGE\"|g" app/build.gradle
@@ -82,7 +82,7 @@ sed -i "s|targetSdk 34|targetSdk $TARGET_SDK|g" app/build.gradle
 sed -i "s|versionCode 1|versionCode $VERSION_CODE|g" app/build.gradle
 sed -i "s|versionName \"1.0\"|versionName \"$VERSION_NAME\"|g" app/build.gradle
 
-# Генерируем settings.gradle — без имён проекта
+# Генерируем settings.gradle
 cat > settings.gradle << 'EOF'
 pluginManagement {
     repositories {
