@@ -8,84 +8,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Создаём стандартную структуру Android
-      - name: Create Android structure
-        run: |
-          mkdir -p app/src/main/java/com/example/runcommandservice
-          mkdir -p app/src/main/res/values
-          mkdir -p gradle/wrapper
+      - name: Make init script executable
+        run: chmod +x init-android.sh
 
-      # Копируем твои файлы в нужные места
-      - name: Move your files to standard locations
-        run: |
-          cp AndroidManifest.xml app/src/main/
-          cp MainActivity.kt app/src/main/java/com/example/runcommandservice/
-          cp list app/src/main/res/values/ || cp list app/src/main/assets/
+      - name: Initialize Android structure
+        run: ./init-android.sh
 
-      # Скачиваем Gradle Wrapper (без архивов)
-      - name: Download Gradle Wrapper
-        run: |
-          curl -o gradlew https://raw.githubusercontent.com/gradle/gradle/master/gradlew
-          curl -o gradlew.bat https://raw.githubusercontent.com/gradle/gradle/master/gradlew.bat
-          curl -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar
-          curl -o gradle/wrapper/gradle-wrapper.properties https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.properties
-          chmod +x gradlew
-
-      # Генерируем минимальный build.gradle
-      - name: Create app/build.gradle
-        run: |
-          cat > app/build.gradle << 'EOF'
-plugins {
-    id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
-}
-
-android {
-    namespace 'com.example.runcommandservice'
-    compileSdk 34
-
-    defaultConfig {
-        applicationId "com.example.runcommandservice"
-        minSdk 21
-        targetSdk 34
-        versionCode 1
-        versionName "1.0"
-    }
-
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-    }
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-    kotlinOptions {
-        jvmTarget = '1.8'
-    }
-}
-
-dependencies {
-    implementation 'androidx.core:core-ktx:1.13.1'
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.11.0'
-}
-EOF
-
-      # Устанавливаем Java
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      # Собираем APK
       - name: Build with Gradle
         run: ./gradlew assembleDebug
 
-      # Загружаем APK
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
