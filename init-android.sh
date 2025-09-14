@@ -1,23 +1,20 @@
 #!/bin/bash
 
-# Создаём нужные папки
 mkdir -p app/src/main/java/com/example/runcommandservice
 mkdir -p app/src/main/res/values
 mkdir -p gradle/wrapper
 
-# Копируем твои файлы в правильные места
 cp AndroidManifest.xml app/src/main/
 cp MainActivity.kt app/src/main/java/com/example/runcommandservice/
 cp list app/src/main/res/values/ || cp list app/src/main/assets/
 
-# Скачиваем Gradle Wrapper
 curl -o gradlew https://raw.githubusercontent.com/gradle/gradle/master/gradlew
 curl -o gradlew.bat https://raw.githubusercontent.com/gradle/gradle/master/gradlew.bat
 curl -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar
 curl -o gradle/wrapper/gradle-wrapper.properties https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.properties
+
 chmod +x gradlew
 
-# Генерируем build.gradle
 cat > app/build.gradle << 'EOF'
 plugins {
     id 'com.android.application'
@@ -58,5 +55,17 @@ dependencies {
 }
 EOF
 
-# ✅ СОЗДАЁМ settings.gradle — ВСЁ, ЧТО НУЖНО ДЛЯ GRADLE 9+
-echo "include ':app'" > settings.gradle
+# ✅ КЛЮЧЕВАЯ СТРОКА — ДОБАВЛЯЕМ РЕПОЗИТОРИЙ ДЛЯ ANDROID ПЛАГИНОВ
+cat > settings.gradle << 'EOF'
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = "RunCommandService"
+include ':app'
+EOF
+
