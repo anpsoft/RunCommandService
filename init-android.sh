@@ -16,11 +16,6 @@ curl -o gradle/wrapper/gradle-wrapper.properties https://raw.githubusercontent.c
 chmod +x gradlew
 
 cat > app/build.gradle << 'EOF'
-repositories {
-    google()
-    mavenCentral()
-}
-
 plugins {
     id 'com.android.application' version '8.4.0'
     id 'org.jetbrains.kotlin.android' version '1.9.22'
@@ -50,6 +45,12 @@ android {
     }
     kotlinOptions {
         jvmTarget = '1.8'
+    }
+
+    // ✅ ТУТ — внутри android {} — только так работает!
+    repositories {
+        google()
+        mavenCentral()
     }
 }
 
