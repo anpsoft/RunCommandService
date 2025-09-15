@@ -92,10 +92,8 @@ EOF
 cat > app/src/main/res/values/styles.xml << EOF
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="$THEME_NAME" parent="Theme.AppCompat.Light.DarkActionBar">
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
+    <style name="$THEME_NAME" parent="android:Theme.Light">
+        <!-- Простая светлая тема без AppCompat -->
     </style>
 </resources>
 EOF
