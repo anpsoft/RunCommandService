@@ -1,32 +1,37 @@
 package com.yourcompany.yourapp
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
+import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.Column
-import androidx.compose.material.Button
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 
-class MainActivity : ComponentActivity() {
+class MainActivity : Activity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Если запущено через Intent RUN_SCRIPT
         if (intent.action == "RUN_SCRIPT") {
             val scriptPath = intent.getStringExtra("script_path") ?: return
             sendTermuxIntent(this, scriptPath)
             finish()
-        } else {
-            setContent {
-                MainScreen { addShortcutToHomeScreen(this, "UpdateWDS", "/data/data/com.termux/files/home/.shortcuts/UpdateWDS.sh") }
-            }
+            return
         }
+
+        // Создаём простой UI без Compose
+        val layout = LinearLayout(this)
+        layout.orientation = LinearLayout.VERTICAL
+        val button = Button(this)
+        button.text = "Создать иконку для UpdateWDS.sh"
+        button.setOnClickListener {
+            addShortcutToHomeScreen(this, "UpdateWDS", "/data/data/com.termux/files/home/.shortcuts/UpdateWDS.sh")
+        }
+        layout.addView(button)
+        setContentView(layout)
     }
 
     private fun sendTermuxIntent(context: Context, scriptPath: String) {
@@ -37,6 +42,7 @@ class MainActivity : ComponentActivity() {
             putExtra("com.termux.RUN_COMMAND_SESSION_ACTION", "0")
         }
         context.startService(intent)
+
         val focusIntent = Intent(Intent.ACTION_MAIN).apply {
             addCategory(Intent.CATEGORY_LAUNCHER)
             setClassName("com.termux", "com.termux.app.TermuxActivity")
@@ -50,27 +56,14 @@ class MainActivity : ComponentActivity() {
             action = "RUN_SCRIPT"
             putExtra("script_path", scriptPath)
         }
+
         val addIntent = Intent("com.android.launcher.action.INSTALL_SHORTCUT").apply {
             putExtra(Intent.EXTRA_SHORTCUT_NAME, name)
             putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
             putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_launcher))
         }
+
         context.sendBroadcast(addIntent)
         Toast.makeText(context, "Иконка создана", Toast.LENGTH_SHORT).show()
     }
-}
-
-@Composable
-fun MainScreen(onCreateShortcut: () -> Unit) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        Button(onClick = onCreateShortcut, modifier = Modifier.fillMaxSize()) {
-            Text("Создать иконку для UpdateWDS.sh")
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun MainScreenPreview() {
-    MainScreen {}
 }
