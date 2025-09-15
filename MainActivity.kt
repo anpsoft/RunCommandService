@@ -3,12 +3,19 @@ package com.yourcompany.yourapp
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.Toast
 
 class MainActivity : Activity() {
+    
+    companion object {
+        const val TERMUX_PERMISSION = "com.termux.permission.RUN_COMMAND"
+        const val PERMISSION_REQUEST_CODE = 1
+    }
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -16,10 +23,11 @@ class MainActivity : Activity() {
         if (intent.action == "RUN_SCRIPT") {
             val scriptPath = intent.getStringExtra("script_path")
             scriptPath?.let { sendTermuxIntent(this, it) }
-            finish() // Закрываем приложение после выполнения
+            finish() // Сразу закрываем без показа UI
             return
         }
         
+        // Обычный UI только если запуск не из ярлыка
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
         }
@@ -34,7 +42,9 @@ class MainActivity : Activity() {
         val runCommandButton = Button(this).apply {
             text = "Отправить команду"
             setOnClickListener { 
-                sendTermuxIntent(this@MainActivity, "/data/data/com.termux/files/home/.shortcuts/UpdateWDS.sh") 
+                if (checkAndRequestPermission()) {
+                    sendTermuxIntent(this@MainActivity, "/data/data/com.termux/files/home/.shortcuts/UpdateWDS.sh")
+                }
             }
         }
         
@@ -43,15 +53,46 @@ class MainActivity : Activity() {
         setContentView(layout)
     }
     
+    private fun checkAndRequestPermission(): Boolean {
+        if (checkSelfPermission(TERMUX_PERMISSION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(TERMUX_PERMISSION), PERMISSION_REQUEST_CODE)
+            return false
+        }
+        return true
+    }
+    
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Разрешение получено", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Разрешение не предоставлено", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    
     private fun sendTermuxIntent(context: Context, scriptPath: String) {
         try {
-            val intent = Intent("com.termux.RUN_COMMAND").apply {
+            // Сначала запускаем Termux
+            val termuxIntent = Intent().apply {
+                setClassName("com.termux", "com.termux.app.TermuxActivity")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(termuxIntent)
+            
+            // Небольшая задержка, чтобы Termux успел запуститься
+            Thread.sleep(1000)
+            
+            // Теперь отправляем команду
+            val commandIntent = Intent("com.termux.RUN_COMMAND").apply {
                 setClassName("com.termux", "com.termux.app.RunCommandService")
                 putExtra("com.termux.RUN_COMMAND_PATH", scriptPath)
                 putExtra("com.termux.RUN_COMMAND_BACKGROUND", false)
                 putExtra("com.termux.RUN_COMMAND_SESSION_ACTION", "0")
             }
-            context.startService(intent)
+            context.startService(commandIntent)
+            
             Toast.makeText(context, "Команда отправлена", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
