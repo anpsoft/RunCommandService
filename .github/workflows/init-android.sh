@@ -17,7 +17,15 @@ fi
 echo "Найден app.ini по пути: $APP_INI_PATH"
 
 # Читаем настройки
-source <(grep -v '^#' "$APP_INI_PATH" | sed 's/=/:/')
+#source <(grep -v '^#' "$APP_INI_PATH" | sed 's/=/:/')
+
+while IFS='=' read -r key value; do
+    [[ $key =~ ^[[:space:]]*# ]] && continue
+    [[ -z $key ]] && continue
+    export "$key=$value"
+done < "$APP_INI_PATH"
+
+
 
 PACKAGE=${package:-com.yourcompany.yourapp}
 VERSION_CODE=${versionCode:-1}
