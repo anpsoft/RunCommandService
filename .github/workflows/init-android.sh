@@ -163,3 +163,52 @@ echo "   Package: $PACKAGE"
 echo "   Path:    java/$JAVA_PATH"
 echo "   Version: $VERSION_NAME ($VERSION_CODE)"
 echo "   SDK:     $MIN_SDK → $TARGET_SDK / $COMPILE_SDK"
+
+# Чтение appName и theme из app.ini
+APP_NAME=${appName:-YourApp}
+THEME_NAME=${theme:-AppTheme}
+
+# Создаём папки ресурсов
+mkdir -p app/src/main/res/values
+mkdir -p app/src/main/res/mipmap-mdpi
+mkdir -p app/src/main/res/mipmap-hdpi
+mkdir -p app/src/main/res/mipmap-xhdpi
+mkdir -p app/src/main/res/mipmap-xxhdpi
+mkdir -p app/src/main/res/mipmap-xxxhdpi
+
+# Генерируем strings.xml
+cat > app/src/main/res/values/strings.xml << EOF
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">$APP_NAME</string>
+</resources>
+EOF
+
+# Генерируем styles.xml
+cat > app/src/main/res/values/styles.xml << EOF
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="$THEME_NAME" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+</resources>
+EOF
+
+# Генерируем colors.xml (обязательно для styles.xml)
+cat > app/src/main/res/values/colors.xml << EOF
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#008577</color>
+    <color name="colorPrimaryDark">#00574B</color>
+    <color name="colorAccent">#D81B60</color>
+</resources>
+EOF
+
+# Копируем icon.png в все mipmap-папки
+cp icon.png app/src/main/res/mipmap-mdpi/ic_launcher.png
+cp icon.png app/src/main/res/mipmap-hdpi/ic_launcher.png
+cp icon.png app/src/main/res/mipmap-xhdpi/ic_launcher.png
+cp icon.png app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+cp icon.png app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
