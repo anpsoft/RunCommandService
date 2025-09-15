@@ -1,11 +1,28 @@
 #!/bin/bash
 
-# Выводим текущую директорию для отладки
+# Выводим текущую директорию и содержимое для отладки
 echo "Текущая директория: $(pwd)"
+echo "Содержимое корня репозитория:"
+ls -la .
+echo "Содержимое родительской директории:"
 ls -la ../
+echo "Содержимое ../RunCommandService (если существует):"
+ls -la ../RunCommandService/ || echo "Папка ../RunCommandService/ не найдена"
+
+# Проверяем наличие app.ini
+APP_INI_PATH="app.ini"
+if [ ! -f "$APP_INI_PATH" ]; then
+  echo "❌ Ошибка: Файл app.ini не найден в текущей директории"
+  APP_INI_PATH="../RunCommandService/app.ini"
+  if [ ! -f "$APP_INI_PATH" ]; then
+    echo "❌ Ошибка: Файл app.ini не найден и в ../RunCommandService/"
+    exit 1
+  fi
+fi
+echo "Найден app.ini по пути: $APP_INI_PATH"
 
 # Читаем настройки из app.ini
-source <(grep -v '^#' ../app.ini | sed 's/=/:/')
+source <(grep -v '^#' "$APP_INI_PATH" | sed 's/=/:/')
 
 # Извлекаем значения
 PACKAGE=${package:-com.yourcompany.yourapp}
@@ -23,15 +40,34 @@ mkdir -p app/src/main/java/$JAVA_PATH
 mkdir -p gradle/wrapper
 mkdir -p app/src/main
 
-# Проверяем наличие AndroidManifest.xml
-if [ ! -f ../AndroidManifest.xml ]; then
-  echo "❌ Ошибка: Файл ../AndroidManifest.xml не найден"
-  exit 1
+# Проверяем наличие AndroidManifest.xml (с учётом возможного регистра)
+MANIFEST_PATH="AndroidManifest.xml"
+if [ ! -f "$MANIFEST_PATH" ]; then
+  MANIFEST_PATH="androidmanifest.xml" # Проверяем вариант с нижним регистром
+  if [ ! -f "$MANIFEST_PATH" ]; then
+    MANIFEST_PATH="../RunCommandService/AndroidManifest.xml"
+    if [ ! -f "$MANIFEST_PATH" ]; then
+      echo "❌ Ошибка: Файл AndroidManifest.xml не найден ни в текущей директории, ни в ../RunCommandService/"
+      exit 1
+    fi
+  fi
 fi
+echo "Найден AndroidManifest.xml по пути: $MANIFEST_PATH"
+
+# Проверяем наличие MainActivity.kt
+MAIN_ACTIVITY_PATH="MainActivity.kt"
+if [ ! -f "$MAIN_ACTIVITY_PATH" ]; then
+  MAIN_ACTIVITY_PATH="../RunCommandService/MainActivity.kt"
+  if [ ! -f "$MAIN_ACTIVITY_PATH" ]; then
+    echo "❌ Ошибка: Файл MainActivity.kt не найден ни в текущей директории, ни в ../RunCommandService/"
+    exit 1
+  fi
+fi
+echo "Найден MainActivity.kt по пути: $MAIN_ACTIVITY_PATH"
 
 # Копируем манифест и MainActivity.kt, проверяем успешность копирования
-cp ../AndroidManifest.xml app/src/main/ || { echo "❌ Ошибка копирования AndroidManifest.xml"; exit 1; }
-cp ../MainActivity.kt app/src/main/java/$JAVA_PATH/ || { echo "❌ Ошибка копирования MainActivity.kt"; exit 1; }
+cp "$MANIFEST_PATH" app/src/main/ || { echo "❌ Ошибка копирования AndroidManifest.xml"; exit 1; }
+cp "$MAIN_ACTIVITY_PATH" app/src/main/java/$JAVA_PATH/ || { echo "❌ Ошибка копирования MainActivity.kt"; exit 1; }
 
 # Проверяем, что манифест скопирован
 if [ -f app/src/main/AndroidManifest.xml ]; then
