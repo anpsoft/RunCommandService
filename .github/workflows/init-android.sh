@@ -6,7 +6,7 @@ ls -la .
 
 
 # ----------------------------
-    # 1a. Обработка нового параметра
+# 1a. Обработка нового параметра
 # ----------------------------
 NEW_MANIFEST_PARAM=${newManifestParam:-default_value}
 ICON_DEFAULT=${iconDefault:-Terminal.png}  # Добавляем новый параметр
@@ -38,6 +38,15 @@ for file in "$MANIFEST_PATH" "$MAIN_ACTIVITY_PATH" "$ICON_PATH" "$ICON_DEFAULT";
         echo "✅ Найден: $file"
     fi
 done
+
+mkdir -p app/src/main/java/$JAVA_PATH
+mkdir -p gradle/wrapper
+mkdir -p app/src/main/res/values
+mkdir -p app/src/main/res/mipmap-mdpi
+mkdir -p app/src/main/res/mipmap-hdpi
+mkdir -p app/src/main/res/mipmap-xhdpi
+mkdir -p app/src/main/res/mipmap-xxhdpi
+mkdir -p app/src/main/res/mipmap-xxxhdpi
 
 # ----------------------------
 # 3. КОПИРОВАНИЕ ФАЙЛОВ
