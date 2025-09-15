@@ -4,31 +4,14 @@ echo "=== 🚀 НАЧАЛО СБОРКИ ==="
 echo "Текущая директория: $(pwd)"
 ls -la .
 
-# ----------------------------
-# 1. ЧТЕНИЕ app.ini — БЕЗ ОШИБОК
-# ----------------------------
-APP_INI_PATH="app.ini"
-if [ ! -f "$APP_INI_PATH" ]; then
-  echo "❌ ОШИБКА: Файл app.ini не найден в текущей директории"
-  APP_INI_PATH="../RunCommandService/app.ini"
-  if [ ! -f "$APP_INI_PATH" ]; then
-    echo "❌ ОШИБКА: app.ini не найден и в ../RunCommandService/"
-    exit 1
-  fi
-fi
-echo "✅ Найден app.ini: $APP_INI_PATH"
-
-while IFS='=' read -r key value; do
-    [[ $key =~ ^[[:space:]]*# ]] && continue
-    [[ -z $key ]] && continue
-    export "$key=$value"
-done < "$APP_INI_PATH"
 
 # ----------------------------
-# 1a. Обработка нового параметра
+    # 1a. Обработка нового параметра
 # ----------------------------
-NEW_MANIFEST_PARAM=${newManifestParam:-default_value}  # значение по умолчанию
+NEW_MANIFEST_PARAM=${newManifestParam:-default_value}
+ICON_DEFAULT=${iconDefault:-Terminal.png}  # Добавляем новый параметр
 echo "✅ Параметр newManifestParam: $NEW_MANIFEST_PARAM"
+echo "✅ Иконка по умолчанию: $ICON_DEFAULT"
 
 PACKAGE=${package:-com.yourcompany.yourapp}
 VERSION_CODE=${versionCode:-1}
@@ -46,7 +29,7 @@ ICON_PATH=${iconPath:-icon.png}
 # ----------------------------
 # 2. ПРОВЕРКА ВСЕХ ФАЙЛОВ
 # ----------------------------
-for file in "$MANIFEST_PATH" "$MAIN_ACTIVITY_PATH" "$ICON_PATH"; do
+for file in "$MANIFEST_PATH" "$MAIN_ACTIVITY_PATH" "$ICON_PATH" "$ICON_DEFAULT"; do
     if [ ! -f "$file" ]; then
         echo "❌ ОШИБКА: Файл не найден: $file"
         ls -la .
@@ -56,28 +39,25 @@ for file in "$MANIFEST_PATH" "$MAIN_ACTIVITY_PATH" "$ICON_PATH"; do
     fi
 done
 
-JAVA_PATH=$(echo "$PACKAGE" | tr '.' '/')
-
-mkdir -p app/src/main/java/$JAVA_PATH
-mkdir -p gradle/wrapper
-mkdir -p app/src/main/res/values
-mkdir -p app/src/main/res/mipmap-mdpi
-mkdir -p app/src/main/res/mipmap-hdpi
-mkdir -p app/src/main/res/mipmap-xhdpi
-mkdir -p app/src/main/res/mipmap-xxhdpi
-mkdir -p app/src/main/res/mipmap-xxxhdpi
-
 # ----------------------------
 # 3. КОПИРОВАНИЕ ФАЙЛОВ
 # ----------------------------
 cp "$MANIFEST_PATH" app/src/main/ || { echo "❌ Не удалось скопировать манифест"; exit 1; }
 cp "$MAIN_ACTIVITY_PATH" app/src/main/java/$JAVA_PATH/ || { echo "❌ Не удалось скопировать MainActivity.kt"; exit 1; }
 
+# Копируем основную иконку приложения
 cp "$ICON_PATH" app/src/main/res/mipmap-mdpi/ic_launcher.png
 cp "$ICON_PATH" app/src/main/res/mipmap-hdpi/ic_launcher.png
 cp "$ICON_PATH" app/src/main/res/mipmap-xhdpi/ic_launcher.png
 cp "$ICON_PATH" app/src/main/res/mipmap-xxhdpi/ic_launcher.png
 cp "$ICON_PATH" app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+
+# Копируем иконку для ярлыков
+cp "$ICON_DEFAULT" app/src/main/res/mipmap-mdpi/ic_shortcut.png
+cp "$ICON_DEFAULT" app/src/main/res/mipmap-hdpi/ic_shortcut.png
+cp "$ICON_DEFAULT" app/src/main/res/mipmap-xhdpi/ic_shortcut.png
+cp "$ICON_DEFAULT" app/src/main/res/mipmap-xxhdpi/ic_shortcut.png
+cp "$ICON_DEFAULT" app/src/main/res/mipmap-xxxhdpi/ic_shortcut.png
 
 # ----------------------------
 # 4. ГЕНЕРАЦИЯ РЕСУРСОВ (strings.xml, styles.xml, colors.xml)

@@ -1,6 +1,7 @@
 package com.yourcompany.yourapp
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -13,7 +14,6 @@ class MainActivity : Activity() {
     
     companion object {
         const val TERMUX_PERMISSION = "com.termux.permission.RUN_COMMAND"
-        const val PERMISSION_REQUEST_CODE = 1
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -22,14 +22,19 @@ class MainActivity : Activity() {
         // Проверяем запуск из ярлыка
         if (intent.action == "RUN_SCRIPT") {
             val scriptPath = intent.getStringExtra("script_path")
+            if (checkSelfPermission(TERMUX_PERMISSION) != PackageManager.PERMISSION_GRANTED) {
+                showPermissionDialog()
+                return
+            }
             scriptPath?.let { sendTermuxIntent(this, it) }
-            finish() // Сразу закрываем без показа UI
+            finish()
             return
         }
         
         // Обычный UI только если запуск не из ярлыка
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            setPadding(32, 32, 32, 32)
         }
         
         val createShortcutButton = Button(this).apply {
@@ -42,7 +47,9 @@ class MainActivity : Activity() {
         val runCommandButton = Button(this).apply {
             text = "Отправить команду"
             setOnClickListener { 
-                if (checkAndRequestPermission()) {
+                if (checkSelfPermission(TERMUX_PERMISSION) != PackageManager.PERMISSION_GRANTED) {
+                    showPermissionDialog()
+                } else {
                     sendTermuxIntent(this@MainActivity, "/data/data/com.termux/files/home/.shortcuts/UpdateWDS.sh")
                 }
             }
@@ -53,23 +60,25 @@ class MainActivity : Activity() {
         setContentView(layout)
     }
     
-    private fun checkAndRequestPermission(): Boolean {
-        if (checkSelfPermission(TERMUX_PERMISSION) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(arrayOf(TERMUX_PERMISSION), PERMISSION_REQUEST_CODE)
-            return false
-        }
-        return true
-    }
-    
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == PERMISSION_REQUEST_CODE) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "Разрешение получено", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "Разрешение не предоставлено", Toast.LENGTH_SHORT).show()
+    private fun showPermissionDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Требуется разрешение")
+            .setMessage("Для работы с Termux нужно предоставить разрешение. Перейдите в Настройки > Приложения > ${packageManager.getApplicationLabel(applicationInfo)} > Разрешения и включите 'Запуск команд Termux'")
+            .setPositiveButton("Открыть настройки") { _, _ ->
+                try {
+                    val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    intent.data = android.net.Uri.parse("package:$packageName")
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Не удалось открыть настройки", Toast.LENGTH_SHORT).show()
+                }
+                finish()
             }
-        }
+            .setNegativeButton("Отмена") { _, _ ->
+                finish()
+            }
+            .setCancelable(false)
+            .show()
     }
     
     private fun sendTermuxIntent(context: Context, scriptPath: String) {
@@ -93,7 +102,9 @@ class MainActivity : Activity() {
             }
             context.startService(commandIntent)
             
-            Toast.makeText(context, "Команда отправлена", Toast.LENGTH_SHORT).show()
+            if (intent.action != "RUN_SCRIPT") {
+                Toast.makeText(context, "Команда отправлена", Toast.LENGTH_SHORT).show()
+            }
         } catch (e: Exception) {
             Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
         }
@@ -104,16 +115,19 @@ class MainActivity : Activity() {
             val shortcutIntent = Intent(context, MainActivity::class.java).apply {
                 action = "RUN_SCRIPT"
                 putExtra("script_path", scriptPath)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
             
+            val uniqueName = name + "_" + System.currentTimeMillis()
+            
             val addIntent = Intent("com.android.launcher.action.INSTALL_SHORTCUT").apply {
-                putExtra(Intent.EXTRA_SHORTCUT_NAME, name)
+                putExtra(Intent.EXTRA_SHORTCUT_NAME, uniqueName)
                 putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
                 putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
-                    Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_launcher))
+                    Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_shortcut))
             }
             context.sendBroadcast(addIntent)
-            Toast.makeText(context, "Ярлык создан", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Ярлык '$uniqueName' создан", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Toast.makeText(context, "Ошибка создания ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
         }
