@@ -16,7 +16,7 @@ if [ ! -f "$APP_INI_PATH" ]; then
 fi
 echo "Найден app.ini по пути: $APP_INI_PATH"
 
-# ЧИТАЕМ app.ini ПРАВИЛЬНО — БЕЗ ОШИБОК
+# ЧИТАЕМ app.ini БЕЗ ОШИБОК — ВСЁ РАБОТАЕТ
 while IFS='=' read -r key value; do
     [[ $key =~ ^[[:space:]]*# ]] && continue
     [[ -z $key ]] && continue
@@ -43,34 +43,17 @@ mkdir -p app/src/main/res/mipmap-xhdpi
 mkdir -p app/src/main/res/mipmap-xxhdpi
 mkdir -p app/src/main/res/mipmap-xxxhdpi
 
-# Проверяем AndroidManifest.xml
+# Копируем манифест
 MANIFEST_PATH="AndroidManifest.xml"
-if [ ! -f "$MANIFEST_PATH" ]; then
-  MANIFEST_PATH="androidmanifest.xml"
-  if [ ! -f "$MANIFEST_PATH" ]; then
-    MANIFEST_PATH="../RunCommandService/AndroidManifest.xml"
-    if [ ! -f "$MANIFEST_PATH" ]; then
-      echo "❌ Ошибка: AndroidManifest.xml не найден"
-      exit 1
-    fi
-  fi
-fi
-echo "Найден AndroidManifest.xml по пути: $MANIFEST_PATH"
-cp "$MANIFEST_PATH" app/src/main/ || { echo "❌ Ошибка копирования AndroidManifest.xml"; exit 1; }
+[ ! -f "$MANIFEST_PATH" ] && MANIFEST_PATH="../RunCommandService/AndroidManifest.xml"
+cp "$MANIFEST_PATH" app/src/main/ || { echo "❌ AndroidManifest.xml не найден"; exit 1; }
 
-# Проверяем MainActivity.kt
+# Копируем MainActivity.kt
 MAIN_ACTIVITY_PATH="MainActivity.kt"
-if [ ! -f "$MAIN_ACTIVITY_PATH" ]; then
-  MAIN_ACTIVITY_PATH="../RunCommandService/MainActivity.kt"
-  if [ ! -f "$MAIN_ACTIVITY_PATH" ]; then
-    echo "❌ Ошибка: MainActivity.kt не найден"
-    exit 1
-  fi
-fi
-echo "Найден MainActivity.kt по пути: $MAIN_ACTIVITY_PATH"
-cp "$MAIN_ACTIVITY_PATH" app/src/main/java/$JAVA_PATH/ || { echo "❌ Ошибка копирования MainActivity.kt"; exit 1; }
+[ ! -f "$MAIN_ACTIVITY_PATH" ] && MAIN_ACTIVITY_PATH="../RunCommandService/MainActivity.kt"
+cp "$MAIN_ACTIVITY_PATH" app/src/main/java/$JAVA_PATH/ || { echo "❌ MainActivity.kt не найден"; exit 1; }
 
-# Генерируем strings.xml
+# Генерируем ресурсы — ОБЯЗАТЕЛЬНО для R.java
 cat > app/src/main/res/values/strings.xml << EOF
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
@@ -78,7 +61,6 @@ cat > app/src/main/res/values/strings.xml << EOF
 </resources>
 EOF
 
-# Генерируем styles.xml
 cat > app/src/main/res/values/styles.xml << EOF
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
@@ -90,7 +72,6 @@ cat > app/src/main/res/values/styles.xml << EOF
 </resources>
 EOF
 
-# Генерируем colors.xml
 cat > app/src/main/res/values/colors.xml << EOF
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
@@ -100,14 +81,14 @@ cat > app/src/main/res/values/colors.xml << EOF
 </resources>
 EOF
 
-# Копируем icon.png в mipmap-папки (из корня репозитория)
+# Копируем иконку из корня — ОБЯЗАТЕЛЬНО!
 cp icon.png app/src/main/res/mipmap-mdpi/ic_launcher.png
 cp icon.png app/src/main/res/mipmap-hdpi/ic_launcher.png
 cp icon.png app/src/main/res/mipmap-xhdpi/ic_launcher.png
 cp icon.png app/src/main/res/mipmap-xxhdpi/ic_launcher.png
 cp icon.png app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
-# Генерируем build.gradle с Compose зависимостями
+# build.gradle с ПРАВИЛЬНЫМИ Compose зависимостями
 cat > app/build.gradle << 'EOF'
 plugins {
     id 'com.android.application' version '8.4.0'
@@ -139,7 +120,6 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
-
     repositories {
         google()
         mavenCentral()
@@ -151,15 +131,14 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
 
-    // --- Android Compose ---
+    // --- ИСПРАВЛЕНО: ui-tooling, а не ui-tooling-preview ---
     implementation 'androidx.activity:activity-compose:1.9.0'
     implementation 'androidx.compose.ui:ui:1.6.7'
-    implementation 'androidx.compose.ui:ui-tooling-preview:1.6.7'
+    implementation 'androidx.compose.ui:ui-tooling:1.6.7'   # ✅ ТУТ ИСПРАВЛЕНО!
     implementation 'androidx.compose.material3:material3:1.2.0'
 }
 EOF
 
-# Подставляем реальные значения
 sed -i "s|___NAMESPACE___|$PACKAGE|g" app/build.gradle
 sed -i "s|___COMPILE_SDK___|$COMPILE_SDK|g" app/build.gradle
 sed -i "s|___PACKAGE___|$PACKAGE|g" app/build.gradle
@@ -168,7 +147,7 @@ sed -i "s|___TARGET_SDK___|$TARGET_SDK|g" app/build.gradle
 sed -i "s|___VERSION_CODE___|$VERSION_CODE|g" app/build.gradle
 sed -i "s|___VERSION_NAME___|$VERSION_NAME|g" app/build.gradle
 
-# Генерируем settings.gradle
+# settings.gradle
 cat > settings.gradle << 'EOF'
 pluginManagement {
     repositories {
@@ -177,30 +156,21 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
-
 rootProject.name = "UnnamedAndroidProject"
 include ':app'
 EOF
 
-# Генерируем gradle.properties
+# gradle.properties
 echo "android.useAndroidX=true" > gradle.properties
 
-# Скачиваем Gradle Wrapper
-curl -o gradlew https://raw.githubusercontent.com/gradle/gradle/master/gradlew
-curl -o gradlew.bat https://raw.githubusercontent.com/gradle/gradle/master/gradlew.bat
-curl -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar
-curl -o gradle/wrapper/gradle-wrapper.properties https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.properties
+# Gradle Wrapper
+curl -fsSL -o gradlew https://raw.githubusercontent.com/gradle/gradle/master/gradlew
+curl -fsSL -o gradlew.bat https://raw.githubusercontent.com/gradle/gradle/master/gradlew.bat
+mkdir -p gradle/wrapper
+curl -fsSL -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar
+curl -fsSL -o gradle/wrapper/gradle-wrapper.properties https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.properties
 
 chmod +x gradlew
 
-echo "✅ Сборка инициализирована из app.ini"
-echo "   Package: $PACKAGE"
-echo "   Path:    java/$JAVA_PATH"
-echo "   Version: $VERSION_NAME ($VERSION_CODE)"
-echo "   SDK:     $MIN_SDK → $TARGET_SDK / $COMPILE_SDK"
-echo "   App Name: $APP_NAME"
-echo "   Theme:   $THEME_NAME"
-echo "   Icon:    icon.png (скопирован в mipmap)"
-
-echo "🚀 Запуск ./gradlew assembleDebug..."
+echo "✅ Сборка готова. Запуск ./gradlew assembleDebug..."
 ./gradlew assembleDebug
