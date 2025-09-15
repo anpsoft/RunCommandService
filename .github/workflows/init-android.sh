@@ -4,25 +4,22 @@ echo "Текущая директория: $(pwd)"
 echo "Содержимое корня репозитория:"
 ls -la .
 
-# Проверяем app.ini
+# Читаем app.ini
 APP_INI_PATH="app.ini"
 if [ ! -f "$APP_INI_PATH" ]; then
   echo "❌ Ошибка: Файл app.ini не найден в текущей директории"
-  APP_INI_PATH="../RunCommandService/app.ini"
-  if [ ! -f "$APP_INI_PATH" ]; then
-    echo "❌ Ошибка: Файл app.ini не найден и в ../RunCommandService/"
-    exit 1
-  fi
+  exit 1
 fi
 echo "Найден app.ini по пути: $APP_INI_PATH"
 
-# ЧИТАЕМ app.ini БЕЗ ОШИБОК — ВСЁ РАБОТАЕТ
+# Читаем все переменные из app.ini — безопасно
 while IFS='=' read -r key value; do
     [[ $key =~ ^[[:space:]]*# ]] && continue
     [[ -z $key ]] && continue
     export "$key=$value"
 done < "$APP_INI_PATH"
 
+# Обязательные параметры
 PACKAGE=${package:-com.yourcompany.yourapp}
 VERSION_CODE=${versionCode:-1}
 VERSION_NAME=${versionName:-1.0}
@@ -31,6 +28,19 @@ TARGET_SDK=${targetSdk:-34}
 COMPILE_SDK=${compileSdk:-34}
 APP_NAME=${appName:-YourApp}
 THEME_NAME=${theme:-AppTheme}
+
+# Пути к файлам — берутся из ini, по умолчанию — в корне
+MANIFEST_PATH=${manifestPath:-AndroidManifest.xml}
+MAIN_ACTIVITY_PATH=${mainActivityPath:-MainActivity.kt}
+ICON_PATH=${iconPath:-icon.png}
+
+# Проверяем наличие всех файлов
+for file in "$MANIFEST_PATH" "$MAIN_ACTIVITY_PATH" "$ICON_PATH"; do
+    if [ ! -f "$file" ]; then
+        echo "❌ Ошибка: Файл не найден: $file"
+        exit 1
+    fi
+done
 
 JAVA_PATH=$(echo "$PACKAGE" | tr '.' '/')
 
@@ -44,16 +54,12 @@ mkdir -p app/src/main/res/mipmap-xxhdpi
 mkdir -p app/src/main/res/mipmap-xxxhdpi
 
 # Копируем манифест
-MANIFEST_PATH="AndroidManifest.xml"
-[ ! -f "$MANIFEST_PATH" ] && MANIFEST_PATH="../RunCommandService/AndroidManifest.xml"
-cp "$MANIFEST_PATH" app/src/main/ || { echo "❌ AndroidManifest.xml не найден"; exit 1; }
+cp "$MANIFEST_PATH" app/src/main/ || { echo "❌ Ошибка копирования манифеста"; exit 1; }
 
 # Копируем MainActivity.kt
-MAIN_ACTIVITY_PATH="MainActivity.kt"
-[ ! -f "$MAIN_ACTIVITY_PATH" ] && MAIN_ACTIVITY_PATH="../RunCommandService/MainActivity.kt"
-cp "$MAIN_ACTIVITY_PATH" app/src/main/java/$JAVA_PATH/ || { echo "❌ MainActivity.kt не найден"; exit 1; }
+cp "$MAIN_ACTIVITY_PATH" app/src/main/java/$JAVA_PATH/ || { echo "❌ Ошибка копирования MainActivity.kt"; exit 1; }
 
-# Генерируем ресурсы — ОБЯЗАТЕЛЬНО для R.java
+# Генерируем ресурсы
 cat > app/src/main/res/values/strings.xml << EOF
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
@@ -81,14 +87,14 @@ cat > app/src/main/res/values/colors.xml << EOF
 </resources>
 EOF
 
-# Копируем иконку из корня — ОБЯЗАТЕЛЬНО!
-cp icon.png app/src/main/res/mipmap-mdpi/ic_launcher.png
-cp icon.png app/src/main/res/mipmap-hdpi/ic_launcher.png
-cp icon.png app/src/main/res/mipmap-xhdpi/ic_launcher.png
-cp icon.png app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-cp icon.png app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+# Копируем иконку в mipmap-папки
+cp "$ICON_PATH" app/src/main/res/mipmap-mdpi/ic_launcher.png
+cp "$ICON_PATH" app/src/main/res/mipmap-hdpi/ic_launcher.png
+cp "$ICON_PATH" app/src/main/res/mipmap-xhdpi/ic_launcher.png
+cp "$ICON_PATH" app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+cp "$ICON_PATH" app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
-# build.gradle с ПРАВИЛЬНЫМИ Compose зависимостями
+# build.gradle с Compose зависимостями (обязательно для R + Button + Text)
 cat > app/build.gradle << 'EOF'
 plugins {
     id 'com.android.application' version '8.4.0'
@@ -131,10 +137,10 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
 
-    // --- ИСПРАВЛЕНО: ui-tooling, а не ui-tooling-preview ---
+    // --- ИСПРАВЛЕНО: ui-tooling, а не preview ---
     implementation 'androidx.activity:activity-compose:1.9.0'
     implementation 'androidx.compose.ui:ui:1.6.7'
-    implementation 'androidx.compose.ui:ui-tooling:1.6.7'   # ✅ ТУТ ИСПРАВЛЕНО!
+    implementation 'androidx.compose.ui:ui-tooling:1.6.7'
     implementation 'androidx.compose.material3:material3:1.2.0'
 }
 EOF
@@ -172,5 +178,13 @@ curl -fsSL -o gradle/wrapper/gradle-wrapper.properties https://raw.githubusercon
 
 chmod +x gradlew
 
-echo "✅ Сборка готова. Запуск ./gradlew assembleDebug..."
+echo "✅ Сборка инициализирована из app.ini"
+echo "   Package: $PACKAGE"
+echo "   App Name: $APP_NAME"
+echo "   Theme:   $THEME_NAME"
+echo "   Icon:    $ICON_PATH"
+echo "   Manifest: $MANIFEST_PATH"
+echo "   MainActivity: $MAIN_ACTIVITY_PATH"
+echo "   SDK:     $MIN_SDK → $TARGET_SDK / $COMPILE_SDK"
+echo "🚀 Запуск ./gradlew assembleDebug..."
 ./gradlew assembleDebug
