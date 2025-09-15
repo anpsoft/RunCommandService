@@ -107,7 +107,7 @@ cat > app/src/main/res/values/colors.xml << EOF
 EOF
 
 # ----------------------------
-# 5. build.gradle — МИНИМАЛЬНАЯ, РАБОЧАЯ ВЕРСИЯ ДЛЯ CI
+# 5. build.gradle — ОБНОВЛЁННЫЙ С COMPOSE
 # ----------------------------
 cat > app/build.gradle << 'EOF'
 plugins {
@@ -133,6 +133,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -140,9 +141,13 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
-    repositories {
-        google()
-        mavenCentral()
+
+    buildFeatures {
+        compose true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion '1.5.10'
     }
 }
 
@@ -154,6 +159,10 @@ dependencies {
     implementation 'androidx.activity:activity-compose:1.9.0'
     implementation 'androidx.compose.ui:ui:1.6.7'
     implementation 'androidx.compose.ui:ui-tooling-preview:1.6.7'
+    implementation 'androidx.compose.foundation:foundation:1.6.7'
+    implementation 'androidx.compose.material:material:1.6.7'
+
+    debugImplementation 'androidx.compose.ui:ui-tooling:1.6.7'
 }
 EOF
 
@@ -214,7 +223,7 @@ if [ -f "app/build.gradle" ]; then echo "✅ build.gradle: сгенериров�
 
 # ----------------------------
 # 10. ЗАПУСК СБОРКИ
-# -------------------------- --
+# ----------------------------
 echo ""
 echo "🚀 Запуск ./gradlew assembleDebug..."
 ./gradlew assembleDebug
