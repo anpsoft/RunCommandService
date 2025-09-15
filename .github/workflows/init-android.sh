@@ -140,32 +140,21 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
-    packagingOptions {
-        resources {
-            excludes += '/META-INF/{AL2.0,LGPL2.1}'
-        }
-    }
-    dexOptions {
-        javaMaxHeapSize "4g"
-    }
     repositories {
         google()
         mavenCentral()
     }
 }
 
-
 dependencies {
     implementation 'androidx.core:core-ktx:1.13.1'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
 
-    // --- ТОЛЬКО БАЗОВЫЙ COMPOSE (АСКЕТИЧНО) ---
     implementation 'androidx.activity:activity-compose:1.9.0'
     implementation 'androidx.compose.ui:ui:1.6.7'
     implementation 'androidx.compose.ui:ui-tooling-preview:1.6.7'
 }
-
 EOF
 
 sed -i "s|___NAMESPACE___|$PACKAGE|g" app/build.gradle
