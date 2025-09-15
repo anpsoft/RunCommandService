@@ -3,28 +3,38 @@ package com.yourcompany.yourapp
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.Button
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
+import androidx.appcompat.app.AppCompatActivity
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        setContent {
-            MainScreen(
-                onCreateShortcut = { addShortcutToHomeScreen(this, "UpdateWDS", "/data/data/com.termux/files/home/.shortcuts/UpdateWDS.sh") },
-                onRunCommand = { sendTermuxIntent(this, "/data/data/com.termux/files/home/.shortcuts/UpdateWDS.sh") }
-            )
+        
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
         }
+        
+        val createShortcutButton = Button(this).apply {
+            text = "Создать ярлык"
+            setOnClickListener { 
+                addShortcutToHomeScreen(this@MainActivity, "UpdateWDS", "/data/data/com.termux/files/home/.shortcuts/UpdateWDS.sh") 
+            }
+        }
+        
+        val runCommandButton = Button(this).apply {
+            text = "Отправить команду"
+            setOnClickListener { 
+                sendTermuxIntent(this@MainActivity, "/data/data/com.termux/files/home/.shortcuts/UpdateWDS.sh") 
+            }
+        }
+        
+        layout.addView(createShortcutButton)
+        layout.addView(runCommandButton)
+        setContentView(layout)
     }
-
+    
     private fun sendTermuxIntent(context: Context, scriptPath: String) {
         val intent = Intent("com.termux.RUN_COMMAND").apply {
             setClassName("com.termux", "com.termux.app.RunCommandService")
@@ -34,13 +44,13 @@ class MainActivity : ComponentActivity() {
         }
         context.startService(intent)
     }
-
+    
     private fun addShortcutToHomeScreen(context: Context, name: String, scriptPath: String) {
         val shortcutIntent = Intent(context, MainActivity::class.java).apply {
             action = "RUN_SCRIPT"
             putExtra("script_path", scriptPath)
         }
-
+        
         val addIntent = Intent("com.android.launcher.action.INSTALL_SHORTCUT").apply {
             putExtra(Intent.EXTRA_SHORTCUT_NAME, name)
             putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
@@ -49,17 +59,5 @@ class MainActivity : ComponentActivity() {
         }
         context.sendBroadcast(addIntent)
         Toast.makeText(context, "Иконка создана", Toast.LENGTH_SHORT).show()
-    }
-}
-
-@Composable
-fun MainScreen(onCreateShortcut: () -> Unit, onRunCommand: () -> Unit) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        Button(onClick = onCreateShortcut) {
-            Text("Создать ярлык")
-        }
-        Button(onClick = onRunCommand) {
-            Text("Отправить команду")
-        }
     }
 }
