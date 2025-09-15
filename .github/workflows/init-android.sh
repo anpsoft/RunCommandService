@@ -16,16 +16,12 @@ if [ ! -f "$APP_INI_PATH" ]; then
 fi
 echo "Найден app.ini по пути: $APP_INI_PATH"
 
-# Читаем настройки
-#source <(grep -v '^#' "$APP_INI_PATH" | sed 's/=/:/')
-
+# ЧИТАЕМ app.ini ПРАВИЛЬНО — БЕЗ ОШИБОК
 while IFS='=' read -r key value; do
     [[ $key =~ ^[[:space:]]*# ]] && continue
     [[ -z $key ]] && continue
     export "$key=$value"
 done < "$APP_INI_PATH"
-
-
 
 PACKAGE=${package:-com.yourcompany.yourapp}
 VERSION_CODE=${versionCode:-1}
@@ -60,8 +56,6 @@ if [ ! -f "$MANIFEST_PATH" ]; then
   fi
 fi
 echo "Найден AndroidManifest.xml по пути: $MANIFEST_PATH"
-
-# Копируем манифест
 cp "$MANIFEST_PATH" app/src/main/ || { echo "❌ Ошибка копирования AndroidManifest.xml"; exit 1; }
 
 # Проверяем MainActivity.kt
@@ -74,8 +68,6 @@ if [ ! -f "$MAIN_ACTIVITY_PATH" ]; then
   fi
 fi
 echo "Найден MainActivity.kt по пути: $MAIN_ACTIVITY_PATH"
-
-# Копируем MainActivity.kt
 cp "$MAIN_ACTIVITY_PATH" app/src/main/java/$JAVA_PATH/ || { echo "❌ Ошибка копирования MainActivity.kt"; exit 1; }
 
 # Генерируем strings.xml
@@ -115,7 +107,7 @@ cp icon.png app/src/main/res/mipmap-xhdpi/ic_launcher.png
 cp icon.png app/src/main/res/mipmap-xxhdpi/ic_launcher.png
 cp icon.png app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
-# Генерируем build.gradle
+# Генерируем build.gradle с Compose зависимостями
 cat > app/build.gradle << 'EOF'
 plugins {
     id 'com.android.application' version '8.4.0'
@@ -167,7 +159,7 @@ dependencies {
 }
 EOF
 
-# Подставляем значения
+# Подставляем реальные значения
 sed -i "s|___NAMESPACE___|$PACKAGE|g" app/build.gradle
 sed -i "s|___COMPILE_SDK___|$COMPILE_SDK|g" app/build.gradle
 sed -i "s|___PACKAGE___|$PACKAGE|g" app/build.gradle
