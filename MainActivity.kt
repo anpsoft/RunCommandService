@@ -1,6 +1,5 @@
 package com.yourcompany.yourapp
 
-import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -8,14 +7,17 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         if (intent.action == "RUN_SCRIPT") {
             val scriptPath = intent.getStringExtra("script_path") ?: return
             sendTermuxIntent(this, scriptPath)
@@ -60,7 +62,15 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen(onCreateShortcut: () -> Unit) {
-    Button(onClick = onCreateShortcut, modifier = Modifier.fillMaxSize()) {
-        Text("Создать иконку для UpdateWDS.sh")
+    Column(modifier = Modifier.fillMaxSize()) {
+        Button(onClick = onCreateShortcut, modifier = Modifier.fillMaxSize()) {
+            Text("Создать иконку для UpdateWDS.sh")
+        }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MainScreenPreview() {
+    MainScreen {}
 }
