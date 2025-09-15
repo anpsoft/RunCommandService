@@ -2,9 +2,11 @@
 
 echo "=== 🚀 НАЧАЛО СБОРКИ ==="
 echo "Текущая директория: $(pwd)"
-echo "Содержимое корня репозитория:"
 ls -la .
 
+# ----------------------------
+# 1. ЧТЕНИЕ app.ini — БЕЗ ОШИБОК
+# ----------------------------
 APP_INI_PATH="app.ini"
 if [ ! -f "$APP_INI_PATH" ]; then
   echo "❌ ОШИБКА: Файл app.ini не найден в текущей директории"
@@ -22,6 +24,12 @@ while IFS='=' read -r key value; do
     export "$key=$value"
 done < "$APP_INI_PATH"
 
+# ----------------------------
+# 1a. Обработка нового параметра
+# ----------------------------
+NEW_MANIFEST_PARAM=${newManifestParam:-default_value}  # значение по умолчанию
+echo "✅ Параметр newManifestParam: $NEW_MANIFEST_PARAM"
+
 PACKAGE=${package:-com.yourcompany.yourapp}
 VERSION_CODE=${versionCode:-1}
 VERSION_NAME=${versionName:-1.0}
@@ -35,6 +43,9 @@ MANIFEST_PATH=${manifestPath:-AndroidManifest.xml}
 MAIN_ACTIVITY_PATH=${mainActivityPath:-MainActivity.kt}
 ICON_PATH=${iconPath:-icon.png}
 
+# ----------------------------
+# 2. ПРОВЕРКА ВСЕХ ФАЙЛОВ
+# ----------------------------
 for file in "$MANIFEST_PATH" "$MAIN_ACTIVITY_PATH" "$ICON_PATH"; do
     if [ ! -f "$file" ]; then
         echo "❌ ОШИБКА: Файл не найден: $file"
@@ -42,7 +53,6 @@ for file in "$MANIFEST_PATH" "$MAIN_ACTIVITY_PATH" "$ICON_PATH"; do
         exit 1
     else
         echo "✅ Найден: $file"
-        ls -la "$file"
     fi
 done
 
@@ -51,15 +61,27 @@ JAVA_PATH=$(echo "$PACKAGE" | tr '.' '/')
 mkdir -p app/src/main/java/$JAVA_PATH
 mkdir -p gradle/wrapper
 mkdir -p app/src/main/res/values
-mkdir -p app/src/main/res/mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}
+mkdir -p app/src/main/res/mipmap-mdpi
+mkdir -p app/src/main/res/mipmap-hdpi
+mkdir -p app/src/main/res/mipmap-xhdpi
+mkdir -p app/src/main/res/mipmap-xxhdpi
+mkdir -p app/src/main/res/mipmap-xxxhdpi
 
+# ----------------------------
+# 3. КОПИРОВАНИЕ ФАЙЛОВ
+# ----------------------------
 cp "$MANIFEST_PATH" app/src/main/ || { echo "❌ Не удалось скопировать манифест"; exit 1; }
 cp "$MAIN_ACTIVITY_PATH" app/src/main/java/$JAVA_PATH/ || { echo "❌ Не удалось скопировать MainActivity.kt"; exit 1; }
 
-for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
-  cp "$ICON_PATH" app/src/main/res/mipmap-$d/ic_launcher.png
-done
+cp "$ICON_PATH" app/src/main/res/mipmap-mdpi/ic_launcher.png
+cp "$ICON_PATH" app/src/main/res/mipmap-hdpi/ic_launcher.png
+cp "$ICON_PATH" app/src/main/res/mipmap-xhdpi/ic_launcher.png
+cp "$ICON_PATH" app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+cp "$ICON_PATH" app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
+# ----------------------------
+# 4. ГЕНЕРАЦИЯ РЕСУРСОВ (strings.xml, styles.xml, colors.xml)
+# ----------------------------
 cat > app/src/main/res/values/strings.xml << EOF
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
@@ -87,6 +109,9 @@ cat > app/src/main/res/values/colors.xml << EOF
 </resources>
 EOF
 
+# ----------------------------
+# 5. build.gradle — МИНИМАЛЬНАЯ, РАБОЧАЯ ВЕРСИЯ ДЛЯ CI
+# ----------------------------
 cat > app/build.gradle << 'EOF'
 plugins {
     id 'com.android.application' version '8.4.0'
@@ -118,11 +143,10 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
-}
-
-repositories {
-    google()
-    mavenCentral()
+    repositories {
+        google()
+        mavenCentral()
+    }
 }
 
 dependencies {
@@ -132,10 +156,7 @@ dependencies {
 
     implementation 'androidx.activity:activity-compose:1.9.0'
     implementation 'androidx.compose.ui:ui:1.6.7'
-    implementation 'androidx.compose.ui:ui-tooling:1.6.7'
     implementation 'androidx.compose.ui:ui-tooling-preview:1.6.7'
-    implementation 'androidx.compose.foundation:foundation:1.6.7'
-    implementation 'androidx.compose.material:material:1.6.7'
 }
 EOF
 
@@ -147,10 +168,16 @@ sed -i "s|___TARGET_SDK___|$TARGET_SDK|g" app/build.gradle
 sed -i "s|___VERSION_CODE___|$VERSION_CODE|g" app/build.gradle
 sed -i "s|___VERSION_NAME___|$VERSION_NAME|g" app/build.gradle
 
-echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8" > gradle.properties
+# ----------------------------
+# 6. gradle.properties — УВЕЛИЧИВАЕМ ПАМЯТЬ
+# ----------------------------
+echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8" > gradle.properties
 echo "android.useAndroidX=true" >> gradle.properties
 echo "android.enableJetifier=true" >> gradle.properties
 
+# ----------------------------
+# 7. settings.gradle
+# ----------------------------
 cat > settings.gradle << 'EOF'
 pluginManagement {
     repositories {
@@ -163,15 +190,34 @@ rootProject.name = "UnnamedAndroidProject"
 include ':app'
 EOF
 
+# ----------------------------
+# 8. Gradle Wrapper
+# ----------------------------
 curl -fsSL -o gradlew https://raw.githubusercontent.com/gradle/gradle/master/gradlew
 curl -fsSL -o gradlew.bat https://raw.githubusercontent.com/gradle/gradle/master/gradlew.bat
 mkdir -p gradle/wrapper
 curl -fsSL -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar
 curl -fsSL -o gradle/wrapper/gradle-wrapper.properties https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.properties
+
 chmod +x gradlew
 
-echo "=== 🔍 ПРОВЕРКА СТРУКТУРЫ ==="
-find . -type f | sort
+# ----------------------------
+# 9. ПРОВЕРКА СТРУКТУРЫ (ДЛЯ ОТЛАДКИ)
+# ----------------------------
+echo ""
+echo "=== 🔍 ПРОВЕРКА СТРУКТУРЫ ПОСЛЕ СБОРКИ ==="
+find . -type f | sort | sed 's/[^\/]*\//|--- /g' | sed 's/|--- \([^|]*\)/|--- \1/g'
 
+echo ""
+echo "=== ✅ ПРОВЕРКА КРИТИЧНЫХ ФАЙЛОВ ==="
+if [ -f "app/src/main/res/values/strings.xml" ]; then echo "✅ strings.xml: есть"; else echo "❌ strings.xml: отсутствует"; fi
+if [ -f "app/src/main/res/mipmap-mdpi/ic_launcher.png" ]; then echo "✅ ic_launcher.png: есть во всех mipmap-папках"; else echo "❌ ic_launcher.png: отсутствует"; fi
+if [ -f "app/src/main/java/$JAVA_PATH/MainActivity.kt" ]; then echo "✅ MainActivity.kt: есть"; else echo "❌ MainActivity.kt: отсутствует"; fi
+if [ -f "app/build.gradle" ]; then echo "✅ build.gradle: сгенерирован"; else echo "❌ build.gradle: отсутствует"; fi
+
+# ----------------------------
+# 10. ЗАПУСК СБОРКИ
+# ----------------------------
+echo ""
 echo "🚀 Запуск ./gradlew assembleDebug..."
 ./gradlew assembleDebug

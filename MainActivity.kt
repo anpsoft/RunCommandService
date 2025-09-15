@@ -6,52 +6,59 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.Modifier
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
-            MainScreen()
+            MainScreen(
+                onCreateShortcut = { addShortcutToHomeScreen(this, "UpdateWDS", "/data/data/com.termux/files/home/.shortcuts/UpdateWDS.sh") },
+                onRunCommand = { sendTermuxIntent(this, "/data/data/com.termux/files/home/.shortcuts/UpdateWDS.sh") }
+            )
         }
     }
 
-    private fun sendTermuxIntent(context: Context) {
+    private fun sendTermuxIntent(context: Context, scriptPath: String) {
         val intent = Intent("com.termux.RUN_COMMAND").apply {
             setClassName("com.termux", "com.termux.app.RunCommandService")
-            putExtra("com.termux.RUN_COMMAND_PATH", "/data/data/com.termux/files/home/.shortcuts/UpdateWDS.sh")
+            putExtra("com.termux.RUN_COMMAND_PATH", scriptPath)
             putExtra("com.termux.RUN_COMMAND_BACKGROUND", false)
+            putExtra("com.termux.RUN_COMMAND_SESSION_ACTION", "0")
         }
         context.startService(intent)
-        Toast.makeText(context, "Команда отправлена", Toast.LENGTH_SHORT).show()
     }
 
-    private fun addShortcut(context: Context) {
-        val shortcutIntent = Intent(context, MainActivity::class.java)
-        shortcutIntent.action = Intent.ACTION_MAIN
+    private fun addShortcutToHomeScreen(context: Context, name: String, scriptPath: String) {
+        val shortcutIntent = Intent(context, MainActivity::class.java).apply {
+            action = "RUN_SCRIPT"
+            putExtra("script_path", scriptPath)
+        }
 
         val addIntent = Intent("com.android.launcher.action.INSTALL_SHORTCUT").apply {
-            putExtra(Intent.EXTRA_SHORTCUT_NAME, "UpdateWDS")
+            putExtra(Intent.EXTRA_SHORTCUT_NAME, name)
             putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
             putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
                 Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_launcher))
         }
-
         context.sendBroadcast(addIntent)
-        Toast.makeText(context, "Ярлык создан", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "Иконка создана", Toast.LENGTH_SHORT).show()
     }
+}
 
-    @Composable
-    fun MainScreen() {
-        val context = LocalContext.current
-        Button(onClick = { addShortcut(context) }) {
+@Composable
+fun MainScreen(onCreateShortcut: () -> Unit, onRunCommand: () -> Unit) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Button(onClick = onCreateShortcut) {
             Text("Создать ярлык")
         }
-        Button(onClick = { sendTermuxIntent(context) }) {
+        Button(onClick = onRunCommand) {
             Text("Отправить команду")
         }
     }
