@@ -1,25 +1,30 @@
 #!/bin/bash
 
+echo "=== 🚀 НАЧАЛО СБОРКИ ==="
 echo "Текущая директория: $(pwd)"
 echo "Содержимое корня репозитория:"
 ls -la .
 
-# Читаем app.ini
+# ----------------------------
+# 1. ЧТЕНИЕ app.ini
+# ----------------------------
 APP_INI_PATH="app.ini"
 if [ ! -f "$APP_INI_PATH" ]; then
-  echo "❌ Ошибка: Файл app.ini не найден в текущей директории"
-  exit 1
+  echo "❌ ОШИБКА: Файл app.ini не найден в текущей директории"
+  APP_INI_PATH="../RunCommandService/app.ini"
+  if [ ! -f "$APP_INI_PATH" ]; then
+    echo "❌ ОШИБКА: app.ini не найден и в ../RunCommandService/"
+    exit 1
+  fi
 fi
-echo "Найден app.ini по пути: $APP_INI_PATH"
+echo "✅ Найден app.ini: $APP_INI_PATH"
 
-# Читаем все переменные из app.ini — безопасно
 while IFS='=' read -r key value; do
     [[ $key =~ ^[[:space:]]*# ]] && continue
     [[ -z $key ]] && continue
     export "$key=$value"
 done < "$APP_INI_PATH"
 
-# Обязательные параметры
 PACKAGE=${package:-com.yourcompany.yourapp}
 VERSION_CODE=${versionCode:-1}
 VERSION_NAME=${versionName:-1.0}
@@ -29,16 +34,31 @@ COMPILE_SDK=${compileSdk:-34}
 APP_NAME=${appName:-YourApp}
 THEME_NAME=${theme:-AppTheme}
 
-# Пути к файлам — берутся из ini, по умолчанию — в корне
+# Пути к файлам — берём из ini, по умолчанию — в корне
 MANIFEST_PATH=${manifestPath:-AndroidManifest.xml}
 MAIN_ACTIVITY_PATH=${mainActivityPath:-MainActivity.kt}
 ICON_PATH=${iconPath:-icon.png}
 
-# Проверяем наличие всех файлов
+echo "✅ Парсинг app.ini завершён:"
+echo "   package: $PACKAGE"
+echo "   appName: $APP_NAME"
+echo "   theme: $THEME_NAME"
+echo "   manifest: $MANIFEST_PATH"
+echo "   mainActivity: $MAIN_ACTIVITY_PATH"
+echo "   icon: $ICON_PATH"
+
+# ----------------------------
+# 2. ПРОВЕРКА ВСЕХ ФАЙЛОВ
+# ----------------------------
 for file in "$MANIFEST_PATH" "$MAIN_ACTIVITY_PATH" "$ICON_PATH"; do
     if [ ! -f "$file" ]; then
-        echo "❌ Ошибка: Файл не найден: $file"
+        echo "❌ ОШИБКА: Файл не найден: $file"
+        echo "   Доступные файлы в корне:"
+        ls -la .
         exit 1
+    else
+        echo "✅ Найден: $file"
+        ls -la "$file"
     fi
 done
 
@@ -53,13 +73,32 @@ mkdir -p app/src/main/res/mipmap-xhdpi
 mkdir -p app/src/main/res/mipmap-xxhdpi
 mkdir -p app/src/main/res/mipmap-xxxhdpi
 
-# Копируем манифест
-cp "$MANIFEST_PATH" app/src/main/ || { echo "❌ Ошибка копирования манифеста"; exit 1; }
+# ----------------------------
+# 3. КОПИРОВАНИЕ ФАЙЛОВ + ЛОГИ
+# ----------------------------
+echo "📁 Копируем AndroidManifest.xml..."
+cp "$MANIFEST_PATH" app/src/main/ || { echo "❌ Не удалось скопировать манифест"; exit 1; }
+ls -la app/src/main/AndroidManifest.xml
 
-# Копируем MainActivity.kt
-cp "$MAIN_ACTIVITY_PATH" app/src/main/java/$JAVA_PATH/ || { echo "❌ Ошибка копирования MainActivity.kt"; exit 1; }
+echo "📄 Копируем MainActivity.kt..."
+cp "$MAIN_ACTIVITY_PATH" app/src/main/java/$JAVA_PATH/ || { echo "❌ Не удалось скопировать MainActivity.kt"; exit 1; }
+ls -la app/src/main/java/$JAVA_PATH/MainActivity.kt
 
-# Генерируем ресурсы
+echo "🖼️ Копируем иконку в mipmap-папки..."
+cp "$ICON_PATH" app/src/main/res/mipmap-mdpi/ic_launcher.png
+cp "$ICON_PATH" app/src/main/res/mipmap-hdpi/ic_launcher.png
+cp "$ICON_PATH" app/src/main/res/mipmap-xhdpi/ic_launcher.png
+cp "$ICON_PATH" app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+cp "$ICON_PATH" app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+
+echo "✅ Проверка иконок:"
+find app/src/main/res/mipmap-* -name "ic_launcher.png" -exec ls -la {} \;
+
+# ----------------------------
+# 4. ГЕНЕРАЦИЯ РЕСУРСОВ (strings, styles, colors)
+# ----------------------------
+echo "📝 Генерируем ресурсы для R.java..."
+
 cat > app/src/main/res/values/strings.xml << EOF
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
@@ -87,14 +126,14 @@ cat > app/src/main/res/values/colors.xml << EOF
 </resources>
 EOF
 
-# Копируем иконку в mipmap-папки
-cp "$ICON_PATH" app/src/main/res/mipmap-mdpi/ic_launcher.png
-cp "$ICON_PATH" app/src/main/res/mipmap-hdpi/ic_launcher.png
-cp "$ICON_PATH" app/src/main/res/mipmap-xhdpi/ic_launcher.png
-cp "$ICON_PATH" app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-cp "$ICON_PATH" app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+echo "✅ Проверка ресурсов:"
+ls -la app/src/main/res/values/strings.xml
+ls -la app/src/main/res/values/styles.xml
+ls -la app/src/main/res/values/colors.xml
 
-# build.gradle с Compose зависимостями (обязательно для R + Button + Text)
+# ----------------------------
+# 5. build.gradle (с правильными Compose зависимостями)
+# ----------------------------
 cat > app/build.gradle << 'EOF'
 plugins {
     id 'com.android.application' version '8.4.0'
@@ -137,7 +176,7 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
 
-    // --- ИСПРАВЛЕНО: ui-tooling, а не preview ---
+    // --- ВАЖНО: Используем ui-tooling, а не ui-tooling-preview ---
     implementation 'androidx.activity:activity-compose:1.9.0'
     implementation 'androidx.compose.ui:ui:1.6.7'
     implementation 'androidx.compose.ui:ui-tooling:1.6.7'
@@ -153,7 +192,9 @@ sed -i "s|___TARGET_SDK___|$TARGET_SDK|g" app/build.gradle
 sed -i "s|___VERSION_CODE___|$VERSION_CODE|g" app/build.gradle
 sed -i "s|___VERSION_NAME___|$VERSION_NAME|g" app/build.gradle
 
-# settings.gradle
+# ----------------------------
+# 6. settings.gradle + gradle.properties
+# ----------------------------
 cat > settings.gradle << 'EOF'
 pluginManagement {
     repositories {
@@ -166,10 +207,11 @@ rootProject.name = "UnnamedAndroidProject"
 include ':app'
 EOF
 
-# gradle.properties
 echo "android.useAndroidX=true" > gradle.properties
 
-# Gradle Wrapper
+# ----------------------------
+# 7. Gradle Wrapper
+# ----------------------------
 curl -fsSL -o gradlew https://raw.githubusercontent.com/gradle/gradle/master/gradlew
 curl -fsSL -o gradlew.bat https://raw.githubusercontent.com/gradle/gradle/master/gradlew.bat
 mkdir -p gradle/wrapper
@@ -178,13 +220,36 @@ curl -fsSL -o gradle/wrapper/gradle-wrapper.properties https://raw.githubusercon
 
 chmod +x gradlew
 
-echo "✅ Сборка инициализирована из app.ini"
-echo "   Package: $PACKAGE"
-echo "   App Name: $APP_NAME"
-echo "   Theme:   $THEME_NAME"
-echo "   Icon:    $ICON_PATH"
-echo "   Manifest: $MANIFEST_PATH"
-echo "   MainActivity: $MAIN_ACTIVITY_PATH"
-echo "   SDK:     $MIN_SDK → $TARGET_SDK / $COMPILE_SDK"
+# ----------------------------
+# 8. ВЫВОД ПОЛНОЙ СТРУКТУРЫ — ТАК, КАК ТЫ ПРОСИЛ!
+# ----------------------------
+echo ""
+echo "=== 📂 ПОЛНАЯ СТРУКТУРА ПОСЛЕ СБОРКИ ==="
+find . -type f | sort | sed 's/[^\/]*\//|--- /g' | sed 's/|--- \([^|]*\)/|--- \1/g'
+
+echo ""
+echo "=== 🔍 ПРОВЕРКА КРИТИЧНЫХ ФАЙЛОВ ==="
+if [ -f "app/src/main/res/values/strings.xml" ]; then
+    echo "✅ strings.xml: есть"
+else
+    echo "❌ strings.xml: ОТСУТСТВУЕТ → R.java НЕ СОЗДАЁТСЯ!"
+fi
+
+if [ -f "app/src/main/res/mipmap-mdpi/ic_launcher.png" ]; then
+    echo "✅ ic_launcher.png: есть во всех mipmap-папках"
+else
+    echo "❌ ic_launcher.png: ОТСУТСТВУЕТ → R.mipmap.ic_launcher НЕ СУЩЕСТВУЕТ!"
+fi
+
+if [ -f "app/src/main/java/$JAVA_PATH/MainActivity.kt" ]; then
+    echo "✅ MainActivity.kt: есть"
+else
+    echo "❌ MainActivity.kt: ОТСУТСТВУЕТ!"
+fi
+
+# ----------------------------
+# 9. ЗАПУСК СБОРКИ
+# ----------------------------
+echo ""
 echo "🚀 Запуск ./gradlew assembleDebug..."
 ./gradlew assembleDebug
