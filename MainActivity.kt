@@ -8,29 +8,43 @@ import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.Toast
+import androidx.core.content.pm.ShortcutInfoCompat
+import androidx.core.content.pm.ShortcutManagerCompat
+import androidx.core.graphics.drawable.IconCompat
 
 class MainActivity : Activity() {
+
+    private val scriptPath = "/data/data/com.termux/files/home/.shortcuts/UpdateWDS.sh"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Если запущено через Intent RUN_SCRIPT
+        // Если Intent пришёл с RUN_SCRIPT, сразу запускаем
         if (intent.action == "RUN_SCRIPT") {
-            val scriptPath = intent.getStringExtra("script_path") ?: return
             sendTermuxIntent(this, scriptPath)
             finish()
             return
         }
 
-        // Создаём простой UI без Compose
         val layout = LinearLayout(this)
         layout.orientation = LinearLayout.VERTICAL
-        val button = Button(this)
-        button.text = "Создать иконку для UpdateWDS.sh"
-        button.setOnClickListener {
-            addShortcutToHomeScreen(this, "UpdateWDS", "/data/data/com.termux/files/home/.shortcuts/UpdateWDS.sh")
+
+        // Кнопка: создать ярлык
+        val shortcutButton = Button(this)
+        shortcutButton.text = "Создать ярлык"
+        shortcutButton.setOnClickListener {
+            createShortcut(this, "UpdateWDS", scriptPath)
         }
-        layout.addView(button)
+        layout.addView(shortcutButton)
+
+        // Кнопка: сразу запустить скрипт
+        val runButton = Button(this)
+        runButton.text = "Запустить скрипт"
+        runButton.setOnClickListener {
+            sendTermuxIntent(this, scriptPath)
+        }
+        layout.addView(runButton)
+
         setContentView(layout)
     }
 
@@ -51,19 +65,23 @@ class MainActivity : Activity() {
         context.startActivity(focusIntent)
     }
 
-    private fun addShortcutToHomeScreen(context: Context, name: String, scriptPath: String) {
+    private fun createShortcut(context: Context, name: String, scriptPath: String) {
         val shortcutIntent = Intent(context, MainActivity::class.java).apply {
             action = "RUN_SCRIPT"
             putExtra("script_path", scriptPath)
         }
 
-        val addIntent = Intent("com.android.launcher.action.INSTALL_SHORTCUT").apply {
-            putExtra(Intent.EXTRA_SHORTCUT_NAME, name)
-            putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
-            putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_launcher))
-        }
+        val shortcut = ShortcutInfoCompat.Builder(context, "shortcut_$name")
+            .setShortLabel(name)
+            .setIntent(shortcutIntent)
+            .setIcon(IconCompat.createWithResource(context, R.mipmap.ic_launcher))
+            .build()
 
-        context.sendBroadcast(addIntent)
-        Toast.makeText(context, "Иконка создана", Toast.LENGTH_SHORT).show()
+        if (ShortcutManagerCompat.isRequestPinShortcutSupported(context)) {
+            ShortcutManagerCompat.requestPinShortcut(context, shortcut, null)
+            Toast.makeText(context, "Ярлык создан (или предложен к добавлению)", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, "Создание ярлыка не поддерживается этим лаунчером", Toast.LENGTH_SHORT).show()
+        }
     }
 }
