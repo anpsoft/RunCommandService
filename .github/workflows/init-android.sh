@@ -176,11 +176,11 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
 
-    // --- ВАЖНО: Используем ui-tooling, а не ui-tooling-preview ---
+    // --- Android Compose (ИСПРАВЛЕННЫЙ ВАРИАНТ) ---
     implementation 'androidx.activity:activity-compose:1.9.0'
     implementation 'androidx.compose.ui:ui:1.6.7'
     implementation 'androidx.compose.ui:ui-tooling:1.6.7'
-    implementation 'androidx.compose.material3:material3:1.2.0'
+    implementation 'androidx.compose.material3:material3:1.2.0'  // ← ДОБАВЬ ЭТО!
 }
 EOF
 
