@@ -1,27 +1,45 @@
 #!/bin/bash
 
+# Выводим текущую директорию для отладки
+echo "Текущая директория: $(pwd)"
+ls -la ../
+
 # Читаем настройки из app.ini
 source <(grep -v '^#' ../app.ini | sed 's/=/:/')
 
 # Извлекаем значения
-PACKAGE=${package:-com.example.unknown}
+PACKAGE=${package:-com.yourcompany.yourapp}
 VERSION_CODE=${versionCode:-1}
 VERSION_NAME=${versionName:-1.0}
 MIN_SDK=${minSdk:-21}
 TARGET_SDK=${targetSdk:-34}
 COMPILE_SDK=${compileSdk:-34}
 
-# Преобразуем package=com.anpsoft.runcommandservice → path=com/anpsoft/runcommandservice
+# Преобразуем package=com.yourcompany.yourapp → path=com/yourcompany/yourapp
 JAVA_PATH=$(echo "$PACKAGE" | tr '.' '/')
 
 # Создаём структуру с динамическим путём
 mkdir -p app/src/main/java/$JAVA_PATH
 mkdir -p gradle/wrapper
-
-# ✅ ИСПРАВЛЕНИЕ: создаём папку app/src/main, потом копируем туда манифест
 mkdir -p app/src/main
-cp ../AndroidManifest.xml app/src/main/
-cp ../MainActivity.kt app/src/main/java/$JAVA_PATH/
+
+# Проверяем наличие AndroidManifest.xml
+if [ ! -f ../AndroidManifest.xml ]; then
+  echo "❌ Ошибка: Файл ../AndroidManifest.xml не найден"
+  exit 1
+fi
+
+# Копируем манифест и MainActivity.kt, проверяем успешность копирования
+cp ../AndroidManifest.xml app/src/main/ || { echo "❌ Ошибка копирования AndroidManifest.xml"; exit 1; }
+cp ../MainActivity.kt app/src/main/java/$JAVA_PATH/ || { echo "❌ Ошибка копирования MainActivity.kt"; exit 1; }
+
+# Проверяем, что манифест скопирован
+if [ -f app/src/main/AndroidManifest.xml ]; then
+  echo "✅ AndroidManifest.xml успешно скопирован в app/src/main/"
+else
+  echo "❌ Ошибка: AndroidManifest.xml не найден в app/src/main/ после копирования"
+  exit 1
+fi
 
 # Скачиваем Gradle Wrapper
 curl -o gradlew https://raw.githubusercontent.com/gradle/gradle/master/gradlew
@@ -31,7 +49,7 @@ curl -o gradle/wrapper/gradle-wrapper.properties https://raw.githubusercontent.c
 
 chmod +x gradlew
 
-# Генерируем build.gradle — используя PACKAGE из app.ini
+# Генерируем build.gradle
 cat > app/build.gradle << 'EOF'
 plugins {
     id 'com.android.application' version '8.4.0'
