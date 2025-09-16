@@ -93,18 +93,6 @@ for file in "$ICON_PATH" "$ICON_DEFAULT"; do
     fi
 done
 
-# Создаем debug keystore для подписи APK
-echo "✅ Создание debug keystore..."
-keytool -genkeypair -v -keystore app/debug.keystore -alias androiddebugkey \
-  -keyalg RSA -keysize 2048 -validity 10000 \
-  -storepass android -keypass android \
-  -dname "CN=Debug,OU=Debug,O=Debug,L=Debug,ST=Debug,C=US" 2>/dev/null
-
-if [ -f "app/debug.keystore" ]; then
-    echo "✅ Keystore создан"
-else
-    echo "❌ Ошибка создания keystore"
-fi
 
 
 # Проверяем котлин файлы
@@ -124,6 +112,22 @@ mkdir -p app/src/main/res/mipmap-hdpi
 mkdir -p app/src/main/res/mipmap-xhdpi
 mkdir -p app/src/main/res/mipmap-xxhdpi
 mkdir -p app/src/main/res/mipmap-xxxhdpi
+
+
+# Создаем debug keystore для подписи APK
+echo "✅ Создание debug keystore..."
+keytool -genkeypair -v -keystore app/debug.keystore -alias androiddebugkey \
+  -keyalg RSA -keysize 2048 -validity 10000 \
+  -storepass android -keypass android \
+  -dname "CN=Debug,OU=Debug,O=Debug,L=Debug,ST=Debug,C=US" 2>/dev/null
+
+if [ -f "app/debug.keystore" ]; then
+    echo "✅ Keystore создан"
+else
+    echo "❌ Ошибка создания keystore"
+fi
+
+
 
 # ----------------------------
 # 3. КОПИРОВАНИЕ И ИСПРАВЛЕНИЕ ФАЙЛОВ
