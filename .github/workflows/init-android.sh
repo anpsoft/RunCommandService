@@ -226,24 +226,30 @@ cat > app/src/main/res/values/colors.xml << EOF
 EOF
 
 # ----------------------------
-# 6. build.gradle — МИНИМАЛЬНАЯ, РАБОЧАЯ ВЕРСИЯ ДЛЯ CI
+# 6. build.gradle — ПРЯМАЯ ПОДСТАНОВКА ПЕРЕМЕННЫХ
 # ----------------------------
-cat > app/build.gradle << 'EOF'
+cat > app/build.gradle << EOF
 plugins {
     id 'com.android.application' version '8.4.0'
     id 'org.jetbrains.kotlin.android' version '1.9.22'
 }
 
 android {
-    namespace '___NAMESPACE___'
-    compileSdk ___COMPILE_SDK___
+    namespace '$PACKAGE'
+    compileSdk $COMPILE_SDK
 
     defaultConfig {
-        applicationId '___PACKAGE___'
-        minSdk ___MIN_SDK___
-        targetSdk ___TARGET_SDK___
-        versionCode ___VERSION_CODE___
-        versionName "___VERSION_NAME___"
+        applicationId '$PACKAGE'
+        minSdk $MIN_SDK
+        targetSdk $TARGET_SDK
+        versionCode $VERSION_CODE
+        versionName "$VERSION_NAME"
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "$APP_NAME.apk"
+        }
     }
 
     buildTypes {
@@ -271,13 +277,10 @@ dependencies {
 }
 EOF
 
-sed -i "s|___NAMESPACE___|$PACKAGE|g" app/build.gradle
-sed -i "s|___COMPILE_SDK___|$COMPILE_SDK|g" app/build.gradle
-sed -i "s|___PACKAGE___|$PACKAGE|g" app/build.gradle
-sed -i "s|___MIN_SDK___|$MIN_SDK|g" app/build.gradle
-sed -i "s|___TARGET_SDK___|$TARGET_SDK|g" app/build.gradle
-sed -i "s|___VERSION_CODE___|$VERSION_CODE|g" app/build.gradle
-sed -i "s|___VERSION_NAME___|$VERSION_NAME|g" app/build.gradle
+# Убираем все sed команды - они больше не нужны
+
+
+
 
 # ----------------------------
 # 7. gradle.properties — УВЕЛИЧИВАЕМ ПАМЯТЬ
@@ -329,6 +332,7 @@ if [ -f "app/src/main/java/$JAVA_PATH/MainActivity.kt" ]; then echo "✅ MainAct
 if [ -f "app/build.gradle" ]; then echo "✅ build.gradle: сгенерирован"; else echo "❌ build.gradle: отсутствует"; fi
 if [ -f "app/src/main/AndroidManifest.xml" ]; then echo "✅ AndroidManifest.xml: сгенерирован"; else echo "❌ AndroidManifest.xml: отсутствует"; fi
 
+
 # ----------------------------
 # 11. ЗАПУСК СБОРКИ
 # ----------------------------
@@ -336,12 +340,10 @@ echo ""
 echo "🚀 Запуск ./gradlew assemble${BUILD_TYPE^}..."
 ./gradlew assemble${BUILD_TYPE^}
 
-APK_PATH="app/build/outputs/apk/$BUILD_TYPE/app-$BUILD_TYPE.apk"
-FINAL_APK="${APP_NAME}.apk"
+APK_PATH="app/build/outputs/apk/$BUILD_TYPE/$APP_NAME.apk"
 
 if [ -f "$APK_PATH" ]; then
-    mv "$APK_PATH" "$FINAL_APK"
-    echo "✅ Итоговый APK: $FINAL_APK"
+    echo "✅ Итоговый APK: $APK_PATH"
 else
     echo "❌ APK не найден: $APK_PATH"
     exit 1

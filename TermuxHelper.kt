@@ -1,5 +1,6 @@
 package com.yourcompany.yourapp
 
+import android.app.ActivityManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -13,26 +14,26 @@ object TermuxHelper {
         return context.checkSelfPermission(TERMUX_PERMISSION) == PackageManager.PERMISSION_GRANTED
     }
 
-    // Тихий старт Termux, первый вызов
+    private fun isTermuxRunning(context: Context): Boolean {
+        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val runningApps = activityManager.runningAppProcesses ?: return false
+        return runningApps.any { it.processName == "com.termux" }
+    }
+
     fun startTermuxSilently(context: Context) {
         try {
-            Runtime.getRuntime().exec(
-                arrayOf(
-                    "am", "start",
-                    "-n", "com.termux/.app.TermuxActivity",
-                    "--activity-clear-task"
-                )
-            ).apply {
-                inputStream.close()
-                errorStream.close()
-                outputStream.close()
+            if (!isTermuxRunning(context)) {
+                val intent = Intent()
+                intent.component = ComponentName("com.termux", "com.termux.app.TermuxActivity")
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                context.startActivity(intent)
+                Thread.sleep(3000) // Пауза только если запускаем
             }
         } catch (_: Exception) {
             // молча игнорируем ошибки
         }
     }
 
-    // Вторая команда, запускаем скрипт и показываем результат
     fun sendCommand(context: Context, scriptPath: String, showToast: Boolean = true) {
         try {
             val commandIntent = Intent("com.termux.RUN_COMMAND").apply {
@@ -53,7 +54,6 @@ object TermuxHelper {
         }
     }
 
-    // Создание ярлыка, оставляем как было
     fun createShortcut(context: Context, name: String, scriptPath: String, activityClass: String, iconResource: Int) {
         try {
             val shortcutIntent = Intent().apply {
@@ -77,6 +77,3 @@ object TermuxHelper {
         }
     }
 }
-
-
-
