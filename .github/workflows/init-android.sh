@@ -93,6 +93,20 @@ for file in "$ICON_PATH" "$ICON_DEFAULT"; do
     fi
 done
 
+# Создаем debug keystore для подписи APK
+echo "✅ Создание debug keystore..."
+keytool -genkeypair -v -keystore app/debug.keystore -alias androiddebugkey \
+  -keyalg RSA -keysize 2048 -validity 10000 \
+  -storepass android -keypass android \
+  -dname "CN=Debug,OU=Debug,O=Debug,L=Debug,ST=Debug,C=US" 2>/dev/null
+
+if [ -f "app/debug.keystore" ]; then
+    echo "✅ Keystore создан"
+else
+    echo "❌ Ошибка создания keystore"
+fi
+
+
 # Проверяем котлин файлы
 for kotlin_file in *.kt; do
     if [ -f "$kotlin_file" ]; then
@@ -252,12 +266,27 @@ android {
         }
     }
 
+    signingConfigs {
+        debug {
+            storeFile file("debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"  
+            keyPassword "android"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
         release {
+            signingConfig signingConfigs.debug
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    
+    
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8

@@ -34,7 +34,7 @@ object TermuxHelper {
         }
     }
 
-    fun sendCommand(context: Context, scriptPath: String, showToast: Boolean = true) {
+/*     fun sendCommand(context: Context, scriptPath: String, showToast: Boolean = true) {
         try {
             val commandIntent = Intent("com.termux.RUN_COMMAND").apply {
                 setClassName("com.termux", "com.termux.app.RunCommandService")
@@ -52,7 +52,27 @@ object TermuxHelper {
                 Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
+    } */
+
+
+fun sendCommand(context: Context, scriptPath: String, showToast: Boolean = true) {
+    try {
+        val commandIntent = Intent("com.termux.RUN_COMMAND").apply {
+            setClassName("com.termux", "com.termux.app.RunCommandService")
+            putExtra("com.termux.RUN_COMMAND_PATH", scriptPath)
+            // Убираем все остальные параметры!
+        }
+        context.startService(commandIntent)
+
+        if (showToast) {
+            Toast.makeText(context, "Команда отправлена", Toast.LENGTH_SHORT).show()
+        }
+    } catch (e: Exception) {
+        if (showToast) {
+            Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
+}
 
     fun createShortcut(context: Context, name: String, scriptPath: String, activityClass: String, iconResource: Int) {
         try {
