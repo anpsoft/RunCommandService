@@ -109,13 +109,17 @@ mkdir -p app/src/main/res/mipmap-xxhdpi
 mkdir -p app/src/main/res/mipmap-xxxhdpi
 
 # ----------------------------
-# 3. КОПИРОВАНИЕ ФАЙЛОВ
+# 3. КОПИРОВАНИЕ И ИСПРАВЛЕНИЕ ФАЙЛОВ
 # ----------------------------
-# Копируем все Kotlin файлы
+# Копируем все Kotlin файлы и исправляем package
 for kotlin_file in *.kt; do
     if [ -f "$kotlin_file" ]; then
         cp "$kotlin_file" app/src/main/java/$JAVA_PATH/ || { echo "❌ Не удалось скопировать $kotlin_file"; exit 1; }
-        echo "✅ Скопирован: $kotlin_file"
+        
+        # Заменяем package в скопированном файле
+        sed -i "s/^package .*/package $PACKAGE/" "app/src/main/java/$JAVA_PATH/$kotlin_file"
+        
+        echo "✅ Скопирован и исправлен: $kotlin_file"
     fi
 done
 
