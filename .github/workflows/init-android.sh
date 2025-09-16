@@ -4,32 +4,83 @@ echo "=== 🚀 НАЧАЛО СБОРКИ ==="
 echo "Текущая директория: $(pwd)"
 ls -la .
 
+# SDK настройки по умолчанию
+DEFAULT_COMPILE_SDK=34
+DEFAULT_TARGET_SDK=34
+DEFAULT_MIN_SDK=21
 
 # ----------------------------
-# 1a. Обработка нового параметра
+# 1. ЧТЕНИЕ app.ini — С СЕКЦИЯМИ
 # ----------------------------
-NEW_MANIFEST_PARAM=${newManifestParam:-default_value}
-ICON_DEFAULT=${iconDefault:-Terminal.png}  # Добавляем новый параметр
-echo "✅ Параметр newManifestParam: $NEW_MANIFEST_PARAM"
-echo "✅ Иконка по умолчанию: $ICON_DEFAULT"
+APP_INI_PATH="app.ini"
+if [ ! -f "$APP_INI_PATH" ]; then
+  echo "❌ ОШИБКА: Файл app.ini не найден в текущей директории"
+  APP_INI_PATH="../RunCommandService/app.ini"
+  if [ ! -f "$APP_INI_PATH" ]; then
+    echo "❌ ОШИБКА: app.ini не найден и в ../RunCommandService/"
+    exit 1
+  fi
+fi
+echo "✅ Найден app.ini: $APP_INI_PATH"
 
-PACKAGE=${package:-com.yourcompany.yourapp}
-VERSION_CODE=${versionCode:-1}
-VERSION_NAME=${versionName:-1.0}
-MIN_SDK=${minSdk:-21}
-TARGET_SDK=${targetSdk:-34}
-COMPILE_SDK=${compileSdk:-34}
-APP_NAME=${appName:-YourApp}
-THEME_NAME=${theme:-AppTheme}
+# Парсинг ini файла с секциями
+current_section=""
+declare -A config
 
-MANIFEST_PATH=${manifestPath:-AndroidManifest.xml}
-MAIN_ACTIVITY_PATH=${mainActivityPath:-MainActivity.kt}
-ICON_PATH=${iconPath:-icon.png}
+while IFS= read -r line; do
+    # Убираем пробелы
+    line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    
+    # Пропускаем комментарии и пустые строки
+    [[ $line =~ ^#.*$ ]] && continue
+    [[ -z $line ]] && continue
+    
+    # Проверяем секции
+    if [[ $line =~ ^\[(.+)\]$ ]]; then
+        current_section="${BASH_REMATCH[1]}"
+        continue
+    fi
+    
+    # Читаем ключ=значение
+    if [[ $line =~ ^([^=]+)=(.*)$ ]]; then
+        key="${BASH_REMATCH[1]}"
+        value="${BASH_REMATCH[2]}"
+        config["${current_section}_${key}"]="$value"
+    fi
+done < "$APP_INI_PATH"
+
+# Получаем значения из секций
+COMPILE_SDK=${config["SDK_compileSdk"]:-$DEFAULT_COMPILE_SDK}
+TARGET_SDK=${config["SDK_targetSdk"]:-$DEFAULT_TARGET_SDK}
+MIN_SDK=${config["SDK_minSdk"]:-$DEFAULT_MIN_SDK}
+
+PACKAGE=${config["Common_package"]:-com.yourcompany.yourapp}
+VERSION_CODE=${config["Common_versionCode"]:-1}
+VERSION_NAME=${config["Common_versionName"]:-1.0}
+APP_NAME=${config["Common_appName"]:-YourApp}
+MAIN_ACTIVITY_PATH=${config["Common_mainActivityPath"]:-MainActivity.kt}
+ICON_PATH=${config["Common_iconPath"]:-icon.png}
+ICON_DEFAULT=${config["Common_iconDefault"]:-Terminal.png}
+
+MAIN_ENABLED=${config["MainActivity_enabled"]:-true}
+MAIN_THEME=${config["MainActivity_theme"]:-AppTheme}
+
+SHORTCUT_ENABLED=${config["ShortcutActivity_enabled"]:-true}
+SHORTCUT_THEME=${config["ShortcutActivity_theme"]:-Translucent}
+SHORTCUT_TOASTS=${config["ShortcutActivity_showToasts"]:-true}
+
+SILENT_ENABLED=${config["SilentActivity_enabled"]:-false}
+SILENT_THEME=${config["SilentActivity_theme"]:-NoDisplay}
+
+echo "✅ SDK: compile=$COMPILE_SDK, target=$TARGET_SDK, min=$MIN_SDK"
+echo "✅ MainActivity: enabled=$MAIN_ENABLED, theme=$MAIN_THEME"
+echo "✅ ShortcutActivity: enabled=$SHORTCUT_ENABLED, theme=$SHORTCUT_THEME"
+echo "✅ SilentActivity: enabled=$SILENT_ENABLED, theme=$SILENT_THEME"
 
 # ----------------------------
 # 2. ПРОВЕРКА ВСЕХ ФАЙЛОВ
 # ----------------------------
-for file in "$MANIFEST_PATH" "$MAIN_ACTIVITY_PATH" "$ICON_PATH" "$ICON_DEFAULT"; do
+for file in "$ICON_PATH" "$ICON_DEFAULT"; do
     if [ ! -f "$file" ]; then
         echo "❌ ОШИБКА: Файл не найден: $file"
         ls -la .
@@ -38,6 +89,15 @@ for file in "$MANIFEST_PATH" "$MAIN_ACTIVITY_PATH" "$ICON_PATH" "$ICON_DEFAULT";
         echo "✅ Найден: $file"
     fi
 done
+
+# Проверяем котлин файлы
+for kotlin_file in *.kt; do
+    if [ -f "$kotlin_file" ]; then
+        echo "✅ Найден: $kotlin_file"
+    fi
+done
+
+JAVA_PATH=$(echo "$PACKAGE" | tr '.' '/')
 
 mkdir -p app/src/main/java/$JAVA_PATH
 mkdir -p gradle/wrapper
@@ -51,8 +111,13 @@ mkdir -p app/src/main/res/mipmap-xxxhdpi
 # ----------------------------
 # 3. КОПИРОВАНИЕ ФАЙЛОВ
 # ----------------------------
-cp "$MANIFEST_PATH" app/src/main/ || { echo "❌ Не удалось скопировать манифест"; exit 1; }
-cp "$MAIN_ACTIVITY_PATH" app/src/main/java/$JAVA_PATH/ || { echo "❌ Не удалось скопировать MainActivity.kt"; exit 1; }
+# Копируем все Kotlin файлы
+for kotlin_file in *.kt; do
+    if [ -f "$kotlin_file" ]; then
+        cp "$kotlin_file" app/src/main/java/$JAVA_PATH/ || { echo "❌ Не удалось скопировать $kotlin_file"; exit 1; }
+        echo "✅ Скопирован: $kotlin_file"
+    fi
+done
 
 # Копируем основную иконку приложения
 cp "$ICON_PATH" app/src/main/res/mipmap-mdpi/ic_launcher.png
@@ -69,7 +134,64 @@ cp "$ICON_DEFAULT" app/src/main/res/mipmap-xxhdpi/ic_shortcut.png
 cp "$ICON_DEFAULT" app/src/main/res/mipmap-xxxhdpi/ic_shortcut.png
 
 # ----------------------------
-# 4. ГЕНЕРАЦИЯ РЕСУРСОВ (strings.xml, styles.xml, colors.xml)
+# 4. ГЕНЕРАЦИЯ МАНИФЕСТА
+# ----------------------------
+cat > app/src/main/AndroidManifest.xml << EOF
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT"/>
+    <uses-permission android:name="com.termux.permission.RUN_COMMAND"/>
+    
+    <application
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:theme="@style/$MAIN_THEME">
+EOF
+
+# Добавляем MainActivity если включена
+if [ "$MAIN_ENABLED" = "true" ]; then
+cat >> app/src/main/AndroidManifest.xml << EOF
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+EOF
+fi
+
+# Добавляем ShortcutActivity если включена
+if [ "$SHORTCUT_ENABLED" = "true" ]; then
+cat >> app/src/main/AndroidManifest.xml << EOF
+        <activity
+            android:name=".ShortcutActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true"/>
+EOF
+fi
+
+# Добавляем SilentActivity если включена  
+if [ "$SILENT_ENABLED" = "true" ]; then
+cat >> app/src/main/AndroidManifest.xml << EOF
+        <activity
+            android:name=".SilentActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:excludeFromRecents="true"/>
+EOF
+fi
+
+cat >> app/src/main/AndroidManifest.xml << EOF
+    </application>
+</manifest>
+EOF
+
+echo "✅ Сгенерирован AndroidManifest.xml"
+
+# ----------------------------
+# 5. ГЕНЕРАЦИЯ РЕСУРСОВ (strings.xml, styles.xml, colors.xml)
 # ----------------------------
 cat > app/src/main/res/values/strings.xml << EOF
 <?xml version="1.0" encoding="utf-8"?>
@@ -81,7 +203,7 @@ EOF
 cat > app/src/main/res/values/styles.xml << EOF
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="$THEME_NAME" parent="android:Theme.Light">
+    <style name="$MAIN_THEME" parent="android:Theme.Light">
         <!-- Простая светлая тема без AppCompat -->
     </style>
 </resources>
@@ -97,7 +219,7 @@ cat > app/src/main/res/values/colors.xml << EOF
 EOF
 
 # ----------------------------
-# 5. build.gradle — МИНИМАЛЬНАЯ, РАБОЧАЯ ВЕРСИЯ ДЛЯ CI
+# 6. build.gradle — МИНИМАЛЬНАЯ, РАБОЧАЯ ВЕРСИЯ ДЛЯ CI
 # ----------------------------
 cat > app/build.gradle << 'EOF'
 plugins {
@@ -138,7 +260,7 @@ repositories {
 }
 
 dependencies {
-
+    // Никаких зависимостей - только стандартный Android SDK
 }
 EOF
 
@@ -151,14 +273,14 @@ sed -i "s|___VERSION_CODE___|$VERSION_CODE|g" app/build.gradle
 sed -i "s|___VERSION_NAME___|$VERSION_NAME|g" app/build.gradle
 
 # ----------------------------
-# 6. gradle.properties — УВЕЛИЧИВАЕМ ПАМЯТЬ
+# 7. gradle.properties — УВЕЛИЧИВАЕМ ПАМЯТЬ
 # ----------------------------
 echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8" > gradle.properties
 echo "android.useAndroidX=true" >> gradle.properties
 echo "android.enableJetifier=true" >> gradle.properties
 
 # ----------------------------
-# 7. settings.gradle
+# 8. settings.gradle
 # ----------------------------
 cat > settings.gradle << 'EOF'
 pluginManagement {
@@ -173,7 +295,7 @@ include ':app'
 EOF
 
 # ----------------------------
-# 8. Gradle Wrapper
+# 9. Gradle Wrapper
 # ----------------------------
 curl -fsSL -o gradlew https://raw.githubusercontent.com/gradle/gradle/master/gradlew
 curl -fsSL -o gradlew.bat https://raw.githubusercontent.com/gradle/gradle/master/gradlew.bat
@@ -184,7 +306,7 @@ curl -fsSL -o gradle/wrapper/gradle-wrapper.properties https://raw.githubusercon
 chmod +x gradlew
 
 # ----------------------------
-# 9. ПРОВЕРКА СТРУКТУРЫ (ДЛЯ ОТЛАДКИ)
+# 10. ПРОВЕРКА СТРУКТУРЫ (ДЛЯ ОТЛАДКИ)
 # ----------------------------
 echo ""
 echo "=== 🔍 ПРОВЕРКА СТРУКТУРЫ ПОСЛЕ СБОРКИ ==="
@@ -196,9 +318,10 @@ if [ -f "app/src/main/res/values/strings.xml" ]; then echo "✅ strings.xml: е�
 if [ -f "app/src/main/res/mipmap-mdpi/ic_launcher.png" ]; then echo "✅ ic_launcher.png: есть во всех mipmap-папках"; else echo "❌ ic_launcher.png: отсутствует"; fi
 if [ -f "app/src/main/java/$JAVA_PATH/MainActivity.kt" ]; then echo "✅ MainActivity.kt: есть"; else echo "❌ MainActivity.kt: отсутствует"; fi
 if [ -f "app/build.gradle" ]; then echo "✅ build.gradle: сгенерирован"; else echo "❌ build.gradle: отсутствует"; fi
+if [ -f "app/src/main/AndroidManifest.xml" ]; then echo "✅ AndroidManifest.xml: сгенерирован"; else echo "❌ AndroidManifest.xml: отсутствует"; fi
 
 # ----------------------------
-# 10. ЗАПУСК СБОРКИ
+# 11. ЗАПУСК СБОРКИ
 # ----------------------------
 echo ""
 echo "🚀 Запуск ./gradlew assembleDebug..."
