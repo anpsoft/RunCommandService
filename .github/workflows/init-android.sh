@@ -285,7 +285,7 @@ echo "android.enableJetifier=true" >> gradle.properties
 
 
 # 8. settings.gradle
-cat > settings.gradle << 'EOF'
+cat > settings.gradle << EOF
 pluginManagement {
     repositories {
         google()
@@ -293,11 +293,12 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
-rootProject.name = "___APP_NAME___"
+rootProject.name = "$APP_NAME"
 include ':app'
 EOF
 
-sed -i "s|___APP_NAME___|$APP_NAME|g" settings.gradle
+#sed -i "s|___APP_NAME___|$APP_NAME|g" settings.gradle
+
 
 # ----------------------------
 # 9. Gradle Wrapper

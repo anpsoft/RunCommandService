@@ -1,5 +1,6 @@
 package com.yourcompany.yourapp
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -36,18 +37,16 @@ object TermuxHelper {
             if (showToast) {
                 Toast.makeText(context, "Команда отправлена", Toast.LENGTH_SHORT).show()
             }
-            } catch (e: Exception) {
+        } catch (e: Exception) {
             if (showToast) {
                 Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
     
-    
     fun createShortcut(context: Context, name: String, scriptPath: String, activityClass: String, iconResource: Int) {
         try {
             val shortcutIntent = Intent().apply {
-                // ИСПРАВЛЕНО: используем полное имя класса
                 component = ComponentName(context.packageName, "${context.packageName}.ShortcutActivity")
                 action = "RUN_SCRIPT"
                 putExtra("script_path", scriptPath)
@@ -60,15 +59,12 @@ object TermuxHelper {
                 putExtra(Intent.EXTRA_SHORTCUT_NAME, uniqueName)
                 putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
                 putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
-                Intent.ShortcutIconResource.fromContext(context, iconResource))
+                    Intent.ShortcutIconResource.fromContext(context, iconResource))
             }
             context.sendBroadcast(addIntent)
             Toast.makeText(context, "Ярлык '$uniqueName' создан", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
+        } catch (e: Exception) {
             Toast.makeText(context, "Ошибка создания ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
-    
-    
-    
 }
