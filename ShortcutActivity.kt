@@ -20,32 +20,35 @@ class ShortcutActivity : Activity() {
             }
             
             scriptPath?.let { 
+                TermuxHelper.startTermuxSilently(this)
+                // Небольшая задержка
+                Thread.sleep(1000)
                 TermuxHelper.sendCommand(this, it, showToast = true) 
             }
             finish()
-        } else {
+            } else {
             finish()
         }
     }
     
     private fun showPermissionDialog() {
         AlertDialog.Builder(this)
-            .setTitle("Требуется разрешение")
-            .setMessage("Для работы с Termux нужно предоставить разрешение в настройках приложения")
-            .setPositiveButton("Открыть настройки") { _, _ ->
-                try {
-                    val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                    intent.data = android.net.Uri.parse("package:$packageName")
-                    startActivity(intent)
+        .setTitle("Требуется разрешение")
+        .setMessage("Для работы с Termux нужно предоставить разрешение в настройках приложения")
+        .setPositiveButton("Открыть настройки") { _, _ ->
+            try {
+                val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                intent.data = android.net.Uri.parse("package:$packageName")
+                startActivity(intent)
                 } catch (e: Exception) {
-                    Toast.makeText(this, "Не удалось открыть настройки", Toast.LENGTH_SHORT).show()
-                }
-                finish()
+                Toast.makeText(this, "Не удалось открыть настройки", Toast.LENGTH_SHORT).show()
             }
-            .setNegativeButton("Отмена") { _, _ ->
-                finish()
-            }
-            .setCancelable(false)
-            .show()
+            finish()
+        }
+        .setNegativeButton("Отмена") { _, _ ->
+            finish()
+        }
+        .setCancelable(false)
+        .show()
     }
 }

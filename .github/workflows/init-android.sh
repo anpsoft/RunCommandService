@@ -62,6 +62,9 @@ MAIN_ACTIVITY_PATH=${config["Common_mainActivityPath"]:-MainActivity.kt}
 ICON_PATH=${config["Common_iconPath"]:-icon.png}
 ICON_DEFAULT=${config["Common_iconDefault"]:-Terminal.png}
 
+BUILD_TYPE=${config["Common_buildType"]:-debug}
+
+
 MAIN_ENABLED=${config["MainActivity_enabled"]:-true}
 MAIN_THEME=${config["MainActivity_theme"]:-AppTheme}
 
@@ -170,7 +173,7 @@ if [ "$SHORTCUT_ENABLED" = "true" ]; then
 cat >> app/src/main/AndroidManifest.xml << EOF
         <activity
             android:name=".ShortcutActivity"
-            android:exported="false"
+            android:exported="true"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:excludeFromRecents="true"/>
 EOF
@@ -330,5 +333,16 @@ if [ -f "app/src/main/AndroidManifest.xml" ]; then echo "✅ AndroidManifest.xml
 # 11. ЗАПУСК СБОРКИ
 # ----------------------------
 echo ""
-echo "🚀 Запуск ./gradlew assembleDebug..."
-./gradlew assembleDebug
+echo "🚀 Запуск ./gradlew assemble${BUILD_TYPE^}..."
+./gradlew assemble${BUILD_TYPE^}
+
+APK_PATH="app/build/outputs/apk/$BUILD_TYPE/app-$BUILD_TYPE.apk"
+FINAL_APK="${APP_NAME}.apk"
+
+if [ -f "$APK_PATH" ]; then
+    mv "$APK_PATH" "$FINAL_APK"
+    echo "✅ Итоговый APK: $FINAL_APK"
+else
+    echo "❌ APK не найден: $APK_PATH"
+    exit 1
+fi
