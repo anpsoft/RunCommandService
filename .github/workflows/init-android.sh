@@ -283,9 +283,8 @@ echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemo
 echo "android.useAndroidX=true" >> gradle.properties
 echo "android.enableJetifier=true" >> gradle.properties
 
-# ----------------------------
+
 # 8. settings.gradle
-# ----------------------------
 cat > settings.gradle << 'EOF'
 pluginManagement {
     repositories {
@@ -294,9 +293,11 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
-rootProject.name = "UnnamedAndroidProject"
+rootProject.name = "___APP_NAME___"
 include ':app'
 EOF
+
+sed -i "s|___APP_NAME___|$APP_NAME|g" settings.gradle
 
 # ----------------------------
 # 9. Gradle Wrapper
