@@ -25,7 +25,8 @@ class MainActivity : Activity() {
                     this@MainActivity, 
                     "UpdateWDS", 
                     "/data/data/com.termux/files/home/.shortcuts/UpdateWDS.sh",
-                    "com.yourcompany.yourapp.ShortcutActivity"
+                    "${packageName}.ShortcutActivity",
+                    R.mipmap.ic_shortcut
                 )
             }
         }

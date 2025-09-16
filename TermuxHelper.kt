@@ -43,7 +43,7 @@ object TermuxHelper {
         }
     }
     
-    fun createShortcut(context: Context, name: String, scriptPath: String, activityClass: String) {
+    fun createShortcut(context: Context, name: String, scriptPath: String, activityClass: String, iconResource: Int) {
         try {
             val shortcutIntent = Intent().apply {
                 setClassName(context.packageName, activityClass)
@@ -58,7 +58,7 @@ object TermuxHelper {
                 putExtra(Intent.EXTRA_SHORTCUT_NAME, uniqueName)
                 putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
                 putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
-                    Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_shortcut))
+                    Intent.ShortcutIconResource.fromContext(context, iconResource))
             }
             context.sendBroadcast(addIntent)
             Toast.makeText(context, "Ярлык '$uniqueName' создан", Toast.LENGTH_SHORT).show()
