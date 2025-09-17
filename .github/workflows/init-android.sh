@@ -28,20 +28,13 @@ current_section=""
 declare -A config
 
 while IFS= read -r line; do
-    # Убираем пробелы
     line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    
-    # Пропускаем комментарии и пустые строки
     [[ $line =~ ^#.*$ ]] && continue
     [[ -z $line ]] && continue
-    
-    # Проверяем секции
     if [[ $line =~ ^\[(.+)\]$ ]]; then
         current_section="${BASH_REMATCH[1]}"
         continue
     fi
-    
-    # Читаем ключ=значение
     if [[ $line =~ ^([^=]+)=(.*)$ ]]; then
         key="${BASH_REMATCH[1]}"
         value="${BASH_REMATCH[2]}"
@@ -49,7 +42,6 @@ while IFS= read -r line; do
     fi
 done < "$APP_INI_PATH"
 
-# Получаем значения из секций
 COMPILE_SDK=${config["SDK_compileSdk"]:-$DEFAULT_COMPILE_SDK}
 TARGET_SDK=${config["SDK_targetSdk"]:-$DEFAULT_TARGET_SDK}
 MIN_SDK=${config["SDK_minSdk"]:-$DEFAULT_MIN_SDK}
@@ -62,9 +54,7 @@ MAIN_ACTIVITY_PATH=${config["Common_mainActivityPath"]:-MainActivity.kt}
 ICON_PATH=${config["Common_iconPath"]:-icon.png}
 ICON_DEFAULT=${config["Common_iconDefault"]:-Terminal.png}
 ICON_NO_ICON=${config["Common_iconNoIcon"]:-no_icon.png}
-
 BUILD_TYPE=${config["Common_buildType"]:-debug}
-
 
 MAIN_ENABLED=${config["MainActivity_enabled"]:-true}
 MAIN_THEME=${config["MainActivity_theme"]:-AppTheme}
@@ -84,7 +74,7 @@ echo "✅ SilentActivity: enabled=$SILENT_ENABLED, theme=$SILENT_THEME"
 # ----------------------------
 # 2. ПРОВЕРКА ВСЕХ ФАЙЛОВ
 # ----------------------------
-for file in "$ICON_PATH" "$ICON_DEFAULT"; do
+for file in "$ICON_PATH" "$ICON_DEFAULT" "$ICON_NO_ICON"; do
     if [ ! -f "$file" ]; then
         echo "❌ ОШИБКА: Файл не найден: $file"
         ls -la .
@@ -94,14 +84,6 @@ for file in "$ICON_PATH" "$ICON_DEFAULT"; do
     fi
 done
 
-if [ ! -f "$ICON_NO_ICON" ]; then
-    echo "❌ ОШИБКА: Файл иконки отсутствия не найден: $ICON_NO_ICON"
-    exit 1
-else
-    echo "✅ Найден: $ICON_NO_ICON"
-fi
-
-# Проверяем котлин файлы
 for kotlin_file in *.kt; do
     if [ -f "$kotlin_file" ]; then
         echo "✅ Найден: $kotlin_file"
@@ -113,14 +95,14 @@ JAVA_PATH=$(echo "$PACKAGE" | tr '.' '/')
 mkdir -p app/src/main/java/$JAVA_PATH
 mkdir -p gradle/wrapper
 mkdir -p app/src/main/res/values
+mkdir -p app/src/main/res/layout
 mkdir -p app/src/main/res/mipmap-mdpi
 mkdir -p app/src/main/res/mipmap-hdpi
 mkdir -p app/src/main/res/mipmap-xhdpi
 mkdir -p app/src/main/res/mipmap-xxhdpi
 mkdir -p app/src/main/res/mipmap-xxxhdpi
 
-
-# Создаем debug keystore для подписи APK
+# Создаем debug keystore
 echo "✅ Создание debug keystore..."
 keytool -genkeypair -v -keystore app/debug.keystore -alias androiddebugkey \
   -keyalg RSA -keysize 2048 -validity 10000 \
@@ -133,38 +115,29 @@ else
     echo "❌ Ошибка создания keystore"
 fi
 
-
-
 # ----------------------------
 # 3. КОПИРОВАНИЕ И ИСПРАВЛЕНИЕ ФАЙЛОВ
 # ----------------------------
-# Копируем все Kotlin файлы и исправляем package
 for kotlin_file in *.kt; do
     if [ -f "$kotlin_file" ]; then
         cp "$kotlin_file" app/src/main/java/$JAVA_PATH/ || { echo "❌ Не удалось скопировать $kotlin_file"; exit 1; }
-        
-        # Заменяем package в скопированном файле
         sed -i "s/^package .*/package $PACKAGE/" "app/src/main/java/$JAVA_PATH/$kotlin_file"
-        
         echo "✅ Скопирован и исправлен: $kotlin_file"
     fi
 done
 
-# Копируем основную иконку приложения
 cp "$ICON_PATH" app/src/main/res/mipmap-mdpi/ic_launcher.png
 cp "$ICON_PATH" app/src/main/res/mipmap-hdpi/ic_launcher.png
 cp "$ICON_PATH" app/src/main/res/mipmap-xhdpi/ic_launcher.png
 cp "$ICON_PATH" app/src/main/res/mipmap-xxhdpi/ic_launcher.png
 cp "$ICON_PATH" app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
-# Копируем иконку для ярлыков
 cp "$ICON_DEFAULT" app/src/main/res/mipmap-mdpi/ic_shortcut.png
 cp "$ICON_DEFAULT" app/src/main/res/mipmap-hdpi/ic_shortcut.png
 cp "$ICON_DEFAULT" app/src/main/res/mipmap-xhdpi/ic_shortcut.png
 cp "$ICON_DEFAULT" app/src/main/res/mipmap-xxhdpi/ic_shortcut.png
 cp "$ICON_DEFAULT" app/src/main/res/mipmap-xxxhdpi/ic_shortcut.png
 
-# Копируем иконку "отсутствия"
 cp "$ICON_NO_ICON" app/src/main/res/mipmap-mdpi/ic_no_icon.png
 cp "$ICON_NO_ICON" app/src/main/res/mipmap-hdpi/ic_no_icon.png
 cp "$ICON_NO_ICON" app/src/main/res/mipmap-xhdpi/ic_no_icon.png
@@ -174,10 +147,9 @@ cp "$ICON_NO_ICON" app/src/main/res/mipmap-xxxhdpi/ic_no_icon.png
 # ----------------------------
 # 4. ГЕНЕРАЦИЯ МАНИФЕСТА
 # ----------------------------
-
 cat > app/src/main/AndroidManifest.xml << EOF
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-<uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT"/>
+    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT"/>
     <uses-permission android:name="com.termux.permission.RUN_COMMAND"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
@@ -188,8 +160,6 @@ cat > app/src/main/AndroidManifest.xml << EOF
         android:theme="@style/$MAIN_THEME">
 EOF
 
-
-# Добавляем MainActivity если включена
 if [ "$MAIN_ENABLED" = "true" ]; then
 cat >> app/src/main/AndroidManifest.xml << EOF
         <activity
@@ -203,7 +173,6 @@ cat >> app/src/main/AndroidManifest.xml << EOF
 EOF
 fi
 
-# Добавляем ShortcutActivity если включена
 if [ "$SHORTCUT_ENABLED" = "true" ]; then
 cat >> app/src/main/AndroidManifest.xml << EOF
         <activity
@@ -214,7 +183,6 @@ cat >> app/src/main/AndroidManifest.xml << EOF
 EOF
 fi
 
-# Добавляем SilentActivity если включена  
 if [ "$SILENT_ENABLED" = "true" ]; then
 cat >> app/src/main/AndroidManifest.xml << EOF
         <activity
@@ -226,6 +194,10 @@ EOF
 fi
 
 cat >> app/src/main/AndroidManifest.xml << EOF
+        <activity
+            android:name=".ScriptSettingsActivity"
+            android:exported="false"
+            android:theme="@style/$MAIN_THEME"/>
     </application>
 </manifest>
 EOF
@@ -233,7 +205,7 @@ EOF
 echo "✅ Сгенерирован AndroidManifest.xml"
 
 # ----------------------------
-# 5. ГЕНЕРАЦИЯ РЕСУРСОВ (strings.xml, styles.xml, colors.xml)
+# 5. ГЕНЕРАЦИЯ РЕСУРСОВ
 # ----------------------------
 cat > app/src/main/res/values/strings.xml << EOF
 <?xml version="1.0" encoding="utf-8"?>
@@ -246,7 +218,6 @@ cat > app/src/main/res/values/styles.xml << EOF
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="$MAIN_THEME" parent="android:Theme.Light">
-        <!-- Простая светлая тема без AppCompat -->
     </style>
 </resources>
 EOF
@@ -260,8 +231,99 @@ cat > app/src/main/res/values/colors.xml << EOF
 </resources>
 EOF
 
+cat > app/src/main/res/layout/script_item.xml << EOF
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="8dp">
+    <ImageView
+        android:id="@+id/script_icon"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@mipmap/ic_no_icon"/>
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <TextView
+            android:id="@+id/script_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"/>
+        <TextView
+            android:id="@+id/script_description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"/>
+    </LinearLayout>
+    <CheckBox
+        android:id="@+id/active_checkbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Активен"/>
+    <CheckBox
+        android:id="@+id/shortcut_checkbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ярлык"/>
+    <Button
+        android:id="@+id/test_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Тест"/>
+</LinearLayout>
+EOF
+
+cat > app/src/main/res/layout/activity_script_settings.xml << EOF
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+    <EditText
+        android:id="@+id/name_edit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Имя скрипта"/>
+    <EditText
+        android:id="@+id/description_edit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Описание"/>
+    <ImageView
+        android:id="@+id/icon_view"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@mipmap/ic_no_icon"/>
+    <Button
+        android:id="@+id/icon_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Выбрать иконку"/>
+    <CheckBox
+        android:id="@+id/active_checkbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Активен"/>
+    <Button
+        android:id="@+id/rename_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Переименовать"/>
+    <Button
+        android:id="@+id/delete_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Удалить"/>
+</LinearLayout>
+EOF
+
 # ----------------------------
-# 6. build.gradle — ПРЯМАЯ ПОДСТАНОВКА ПЕРЕМЕННЫХ
+# 6. build.gradle
 # ----------------------------
 cat > app/build.gradle << EOF
 plugins {
@@ -307,7 +369,6 @@ android {
         }
     }
     
-    
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -323,22 +384,16 @@ repositories {
 }
 
 dependencies {
-    // Никаких зависимостей - только стандартный Android SDK
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
 }
 EOF
 
-# Убираем все sed команды - они больше не нужны
-
-
-
-
 # ----------------------------
-# 7. gradle.properties — УВЕЛИЧИВАЕМ ПАМЯТЬ
+# 7. gradle.properties
 # ----------------------------
 echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8" > gradle.properties
 echo "android.useAndroidX=true" >> gradle.properties
 echo "android.enableJetifier=true" >> gradle.properties
-
 
 # 8. settings.gradle
 cat > settings.gradle << EOF
@@ -353,9 +408,6 @@ rootProject.name = "$APP_NAME"
 include ':app'
 EOF
 
-#sed -i "s|___APP_NAME___|$APP_NAME|g" settings.gradle
-
-
 # ----------------------------
 # 9. Gradle Wrapper
 # ----------------------------
@@ -368,7 +420,7 @@ curl -fsSL -o gradle/wrapper/gradle-wrapper.properties https://raw.githubusercon
 chmod +x gradlew
 
 # ----------------------------
-# 10. ПРОВЕРКА СТРУКТУРЫ (ДЛЯ ОТЛАДКИ)
+# 10. ПРОВЕРКА СТРУКТУРЫ
 # ----------------------------
 echo ""
 echo "=== 🔍 ПРОВЕРКА СТРУКТУРЫ ПОСЛЕ СБОРКИ ==="
@@ -381,7 +433,6 @@ if [ -f "app/src/main/res/mipmap-mdpi/ic_launcher.png" ]; then echo "✅ ic_laun
 if [ -f "app/src/main/java/$JAVA_PATH/MainActivity.kt" ]; then echo "✅ MainActivity.kt: есть"; else echo "❌ MainActivity.kt: отсутствует"; fi
 if [ -f "app/build.gradle" ]; then echo "✅ build.gradle: сгенерирован"; else echo "❌ build.gradle: отсутствует"; fi
 if [ -f "app/src/main/AndroidManifest.xml" ]; then echo "✅ AndroidManifest.xml: сгенерирован"; else echo "❌ AndroidManifest.xml: отсутствует"; fi
-
 
 # ----------------------------
 # 11. ЗАПУСК СБОРКИ
