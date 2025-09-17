@@ -47,8 +47,7 @@ TARGET_SDK=${config["SDK_targetSdk"]:-$DEFAULT_TARGET_SDK}
 MIN_SDK=${config["SDK_minSdk"]:-$DEFAULT_MIN_SDK}
 
 APP_NAME=${config["Common_appName"]:-YourApp}
-PACKAGE_BASE=${config["Common_packageBase"]:-com.yourcompany.yourapp}
-PACKAGE="$PACKAGE_BASE$(echo $APP_NAME | sed 's/YourApp//')" # Уникальный package, напр. com.yourcompany.yourapp3
+PACKAGE=${config["Common_package"]:-com.yourcompany.yourapp3}
 VERSION_CODE=${config["Common_versionCode"]:-1}
 VERSION_NAME=${config["Common_versionName"]:-1.0}
 MAIN_ACTIVITY_PATH=${config["Common_mainActivityPath"]:-MainActivity.kt}
@@ -117,13 +116,31 @@ else
 fi
 
 # ----------------------------
-# 3. КОПИРОВАНИЕ И ИСПРАВЛЕНИЕ ФАЙЛОВ
+# 3. КОПИРОВАНИЕ И ИСПРАВЛЕНИЕ ФАЙЛОВ (УЛУЧШЕННАЯ ОЧИСТКА)
 # ----------------------------
 for kotlin_file in *.kt; do
     if [ -f "$kotlin_file" ]; then
-        cp "$kotlin_file" app/src/main/java/$JAVA_PATH/ || { echo "❌ Не удалось скопировать $kotlin_file"; exit 1; }
-        sed -i "s/^package .*/package $PACKAGE/" "app/src/main/java/$JAVA_PATH/$kotlin_file"
-        echo "✅ Скопирован и исправлен: $kotlin_file"
+        echo "🧹 Обработка $kotlin_file..."
+        
+        # Создаем временную копию для очистки
+        cp "$kotlin_file" "/tmp/${kotlin_file}.tmp"
+        
+        # Удаляем ВСЕ package строки (могут быть разные варианты)
+        sed -i '/^package /d' "/tmp/${kotlin_file}.tmp"
+        
+        # Удаляем пустые строки в начале файла
+        sed -i '/./,$!d' "/tmp/${kotlin_file}.tmp"
+        
+        # Копируем очищенный файл
+        cp "/tmp/${kotlin_file}.tmp" "app/src/main/java/$JAVA_PATH/$kotlin_file"
+        
+        # Добавляем правильный package в начало
+        sed -i "1i package $PACKAGE" "app/src/main/java/$JAVA_PATH/$kotlin_file"
+        
+        # Удаляем временный файл
+        rm "/tmp/${kotlin_file}.tmp"
+        
+        echo "✅ Очищен и исправлен: $kotlin_file -> package $PACKAGE"
     fi
 done
 
