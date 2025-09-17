@@ -1,5 +1,3 @@
-package com.yourcompany.yourapp
-
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
@@ -8,6 +6,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.widget.Button
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -61,11 +60,11 @@ class MainActivity : Activity() {
         // Шапка для списка
         val headerLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            addView(TextView(this@MainActivity).apply { text = "Иконка" ; width = 48.dp })
-            addView(TextView(this@MainActivity).apply { text = "Имя / Описание" ; setPadding(8.dp, 0, 0, 0) ; layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) })
-            addView(TextView(this@MainActivity).apply { text = "" ; width = 48.dp }) # Для активен
-            addView(TextView(this@MainActivity).apply { text = "" ; width = 48.dp }) # Для ярлык
-            addView(TextView(this@MainActivity).apply { text = "Тест" ; width = 60.dp })
+            addView(TextView(this@MainActivity).apply { text = "Иконка"; width = 48.dp })
+            addView(TextView(this@MainActivity).apply { text = "Имя / Описание"; setPadding(8.dp, 0, 0, 0); layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) })
+            addView(TextView(this@MainActivity).apply { text = ""; width = 48.dp }) // Для активен
+            addView(TextView(this@MainActivity).apply { text = ""; width = 48.dp }) // Для ярлык
+            addView(TextView(this@MainActivity).apply { text = "Тест"; width = 60.dp })
         }
         layout.addView(headerLayout)
 
@@ -124,11 +123,12 @@ class MainActivity : Activity() {
     }
 
     private fun createNewScript() {
-        val dialog = AlertDialog.Builder(this)
+        val editText = EditText(this).apply { hint = "Имя скрипта" }
+        AlertDialog.Builder(this)
             .setTitle("Новый скрипт")
-            .setView(EditText(this).apply { hint = "Имя скрипта" })
+            .setView(editText)
             .setPositiveButton("OK") { _, _ ->
-                val name = (it as EditText).text.toString()
+                val name = editText.text.toString()
                 if (name.isNotEmpty()) {
                     val scriptFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$name.sh")
                     scriptFile.createNewFile()
