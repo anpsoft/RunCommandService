@@ -61,6 +61,7 @@ APP_NAME=${config["Common_appName"]:-YourApp}
 MAIN_ACTIVITY_PATH=${config["Common_mainActivityPath"]:-MainActivity.kt}
 ICON_PATH=${config["Common_iconPath"]:-icon.png}
 ICON_DEFAULT=${config["Common_iconDefault"]:-Terminal.png}
+ICON_NO_ICON=${config["Common_iconNoIcon"]:-no_icon.png}
 
 BUILD_TYPE=${config["Common_buildType"]:-debug}
 
@@ -93,7 +94,12 @@ for file in "$ICON_PATH" "$ICON_DEFAULT"; do
     fi
 done
 
-
+if [ ! -f "$ICON_NO_ICON" ]; then
+    echo "❌ ОШИБКА: Файл иконки отсутствия не найден: $ICON_NO_ICON"
+    exit 1
+else
+    echo "✅ Найден: $ICON_NO_ICON"
+fi
 
 # Проверяем котлин файлы
 for kotlin_file in *.kt; do
@@ -158,19 +164,30 @@ cp "$ICON_DEFAULT" app/src/main/res/mipmap-xhdpi/ic_shortcut.png
 cp "$ICON_DEFAULT" app/src/main/res/mipmap-xxhdpi/ic_shortcut.png
 cp "$ICON_DEFAULT" app/src/main/res/mipmap-xxxhdpi/ic_shortcut.png
 
+# Копируем иконку "отсутствия"
+cp "$ICON_NO_ICON" app/src/main/res/mipmap-mdpi/ic_no_icon.png
+cp "$ICON_NO_ICON" app/src/main/res/mipmap-hdpi/ic_no_icon.png
+cp "$ICON_NO_ICON" app/src/main/res/mipmap-xhdpi/ic_no_icon.png
+cp "$ICON_NO_ICON" app/src/main/res/mipmap-xxhdpi/ic_no_icon.png
+cp "$ICON_NO_ICON" app/src/main/res/mipmap-xxxhdpi/ic_no_icon.png
+
 # ----------------------------
 # 4. ГЕНЕРАЦИЯ МАНИФЕСТА
 # ----------------------------
+
 cat > app/src/main/AndroidManifest.xml << EOF
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT"/>
+<uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT"/>
     <uses-permission android:name="com.termux.permission.RUN_COMMAND"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     
     <application
         android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
         android:theme="@style/$MAIN_THEME">
 EOF
+
 
 # Добавляем MainActivity если включена
 if [ "$MAIN_ENABLED" = "true" ]; then

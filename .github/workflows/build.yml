@@ -1,9 +1,13 @@
 name: Build Android App
 on: [push, pull_request, workflow_dispatch]
 
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    env:
+      TZ: Europe/Kiev
 
     steps:
       - uses: actions/checkout@v4

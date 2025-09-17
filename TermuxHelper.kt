@@ -34,25 +34,6 @@ object TermuxHelper {
         }
     }
 
-/*     fun sendCommand(context: Context, scriptPath: String, showToast: Boolean = true) {
-        try {
-            val commandIntent = Intent("com.termux.RUN_COMMAND").apply {
-                setClassName("com.termux", "com.termux.app.RunCommandService")
-                putExtra("com.termux.RUN_COMMAND_PATH", scriptPath)
-                putExtra("com.termux.RUN_COMMAND_BACKGROUND", false)
-                putExtra("com.termux.RUN_COMMAND_SESSION_ACTION", "0")
-            }
-            context.startService(commandIntent)
-
-            if (showToast) {
-                Toast.makeText(context, "Команда отправлена", Toast.LENGTH_SHORT).show()
-            }
-        } catch (e: Exception) {
-            if (showToast) {
-                Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
-            }
-        }
-    } */
 
 
 fun sendCommand(context: Context, scriptPath: String, showToast: Boolean = true) {
@@ -96,4 +77,26 @@ fun sendCommand(context: Context, scriptPath: String, showToast: Boolean = true)
             Toast.makeText(context, "Ошибка создания ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
+    
+    
+    
+    fun deleteShortcut(context: Context, name: String, scriptPath: String) {
+    try {
+        val shortcutIntent = Intent().apply {
+            component = ComponentName(context.packageName, "${context.packageName}.ShortcutActivity")
+            action = "RUN_SCRIPT"
+            putExtra("script_path", scriptPath)
+        }
+        val removeIntent = Intent("com.android.launcher.action.UNINSTALL_SHORTCUT").apply {
+            putExtra(Intent.EXTRA_SHORTCUT_NAME, name)
+            putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
+        }
+        context.sendBroadcast(removeIntent)
+    } catch (e: Exception) {
+        Toast.makeText(context, "Ошибка удаления ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
+    }
+    
+    
+}
+    
 }
