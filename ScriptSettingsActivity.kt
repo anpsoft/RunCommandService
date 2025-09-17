@@ -9,14 +9,17 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.GridView
+import android.widget.Toast
 import java.io.File
 
 class ScriptSettingsActivity : Activity() {
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_script_settings)
 
-        val scriptName = intent.getStringExtra("script_name") ?: return
+        val scriptName = intent.getStringExtra("script_name") ?: finish()
         val config = IniHelper.getScriptConfig(scriptName)
 
         val nameEdit = findViewById<EditText>(R.id.name_edit)
@@ -30,27 +33,33 @@ class ScriptSettingsActivity : Activity() {
         nameEdit.setText(config.name.ifEmpty { scriptName })
         descriptionEdit.setText(config.description)
         activeCheckBox.isChecked = config.isActive
-        // Установить иконку (реализация позже)
 
         activeCheckBox.setOnCheckedChangeListener { _, isChecked ->
             IniHelper.updateScriptConfig(scriptName, config.copy(isActive = isChecked))
         }
 
         iconButton.setOnClickListener {
-            // Открыть выбор иконки (реализация позже)
+            showIconPicker(scriptName, config)
         }
 
         renameButton.setOnClickListener {
+            val newNameEdit = EditText(this).apply { setText(scriptName) }
             AlertDialog.Builder(this)
                 .setTitle("Переименовать скрипт")
-                .setMessage("Введите новое имя")
-                .setView(EditText(this).apply { setText(scriptName) })
+                .setView(newNameEdit)
                 .setPositiveButton("ОК") { _, _ ->
-                    val newName = (it as EditText).text.toString()
-                    val oldFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh")
-                    val newFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$newName.sh")
-                    oldFile.renameTo(newFile)
-                    IniHelper.renameScriptConfig(scriptName, newName, config.copy(name = newName))
+                    val newName = newNameEdit.text.toString()
+                    if (newName != scriptName && newName.isNotEmpty()) {
+                        val oldFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh")
+                        val newFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$newName.sh")
+                        if (oldFile.exists() && !newFile.exists()) {
+                            oldFile.renameTo(newFile)
+                            IniHelper.renameScriptConfig(scriptName, newName, config.copy(name = newName))
+                            finish()
+                        } else {
+                            Toast.makeText(this, "Ошибка переименования", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
                 .setNegativeButton("Отмена", null)
                 .show()
@@ -59,7 +68,7 @@ class ScriptSettingsActivity : Activity() {
         deleteButton.setOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle("Удалить скрипт")
-                .setMessage("Вы уверены, что хотите удалить $scriptName?")
+                .setMessage("Уверены?")
                 .setPositiveButton("Да") { _, _ ->
                     File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh").delete()
                     IniHelper.deleteScriptConfig(scriptName)
@@ -68,5 +77,29 @@ class ScriptSettingsActivity : Activity() {
                 .setNegativeButton("Нет", null)
                 .show()
         }
+    }
+
+    private fun showIconPicker(scriptName: String, config: ScriptConfig) {
+        val iconsDir = File(Environment.getExternalStorageDirectory(), "MyScripts/icons")
+        iconsDir.mkdirs()
+        val icons = iconsDir.listFiles { _, name -> name.endsWith(".png") || name.endsWith(".jpg") } ?: return
+
+        val gridView = GridView(this).apply {
+            numColumns = 3
+            adapter = IconAdapter(this@ScriptSettingsActivity, icons.toList())
+            setOnItemClickListener { _, _, position, _ ->
+                val selectedIcon = icons[position].name
+                val newConfig = config.copy(icon = selectedIcon)
+                IniHelper.updateScriptConfig(scriptName, newConfig)
+                Toast.makeText(this@ScriptSettingsActivity, "Иконка выбрана", Toast.LENGTH_SHORT).show()
+                finish()
+            }
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Выберите иконку")
+            .setView(gridView)
+            .setNegativeButton("Отмена", null)
+            .show()
     }
 }

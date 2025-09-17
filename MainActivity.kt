@@ -3,12 +3,15 @@ package com.yourcompany.yourapp
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.widget.Button
 import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.io.File
@@ -21,6 +24,8 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        requestPermissions()
+
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(32, 32, 32, 32)
@@ -32,7 +37,7 @@ class MainActivity : Activity() {
                 TermuxHelper.createShortcut(
                     this@MainActivity, 
                     "UpdateWDS", 
-                    "/data/data/com.termux/files/home/.shortcuts/UpdateWDS.sh",
+                    "/sdcard/MyScripts/UpdateWDS.sh",
                     "${packageName}.ShortcutActivity",
                     R.mipmap.ic_shortcut
                 )
@@ -45,48 +50,73 @@ class MainActivity : Activity() {
                 if (!TermuxHelper.hasPermission(this@MainActivity)) {
                     showPermissionDialog()
                 } else {
-                    TermuxHelper.sendCommand(this@MainActivity, "/data/data/com.termux/files/home/.shortcuts/UpdateWDS.sh")
+                    TermuxHelper.sendCommand(this@MainActivity, "/sdcard/MyScripts/UpdateWDS.sh")
                 }
             }
         }
+
+        layout.addView(createShortcutButton)
+        layout.addView(runCommandButton)
+
+        // Шапка для списка
+        val headerLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(TextView(this@MainActivity).apply { text = "Иконка" ; width = 48.dp })
+            addView(TextView(this@MainActivity).apply { text = "Имя / Описание" ; setPadding(8.dp, 0, 0, 0) ; layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) })
+            addView(TextView(this@MainActivity).apply { text = "" ; width = 48.dp }) # Для активен
+            addView(TextView(this@MainActivity).apply { text = "" ; width = 48.dp }) # Для ярлык
+            addView(TextView(this@MainActivity).apply { text = "Тест" ; width = 60.dp })
+        }
+        layout.addView(headerLayout)
 
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
         }
         adapter = ScriptAdapter(this, ::onScriptSettings, ::onTestRun)
         recyclerView.adapter = adapter
-        updateScriptList()
+        layout.addView(recyclerView)
 
+        // Кнопки внизу в одной строке
+        val bottomButtons = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
         val refreshButton = Button(this).apply {
-            text = "Обновить список"
+            text = "Обновить"
             setOnClickListener { updateScriptList() }
         }
-
         val createScriptButton = Button(this).apply {
-            text = "Создать скрипт"
+            text = "Новый"
             setOnClickListener { createNewScript() }
         }
-
         val showAllButton = Button(this).apply {
-            text = "Показать все"
+            text = "Все"
             setOnClickListener {
                 showAllScripts = !showAllScripts
-                text = if (showAllScripts) "Показать активные" else "Показать все"
+                text = if (showAllScripts) "Активные" else "Все"
                 updateScriptList()
             }
         }
+        bottomButtons.addView(refreshButton)
+        bottomButtons.addView(createScriptButton)
+        bottomButtons.addView(showAllButton)
+        layout.addView(bottomButtons)
 
-        layout.addView(createShortcutButton)
-        layout.addView(runCommandButton)
-        layout.addView(recyclerView)
-        layout.addView(refreshButton)
-        layout.addView(createScriptButton)
-        layout.addView(showAllButton)
         setContentView(layout)
+        updateScriptList()
+    }
+
+    private fun requestPermissions() {
+        val permissions = arrayOf(
+            "android.permission.READ_EXTERNAL_STORAGE",
+            "android.permission.WRITE_EXTERNAL_STORAGE",
+            "com.android.launcher.permission.INSTALL_SHORTCUT"
+        )
+        ActivityCompat.requestPermissions(this, permissions, 1)
     }
 
     private fun updateScriptList() {
         val scriptsDir = File(Environment.getExternalStorageDirectory(), "MyScripts")
+        scriptsDir.mkdirs()
         val scripts = scriptsDir.listFiles { _, name -> name.endsWith(".sh") }?.map { file ->
             Script(file.nameWithoutExtension, file.absolutePath)
         }?.filter { showAllScripts || IniHelper.getScriptConfig(it.name).isActive } ?: emptyList()
@@ -94,15 +124,25 @@ class MainActivity : Activity() {
     }
 
     private fun createNewScript() {
-        val scriptName = "new_script" // Заменить на диалог ввода имени
-        val scriptFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh")
-        scriptFile.createNewFile()
-        IniHelper.addScriptConfig(scriptName, ScriptConfig(name = scriptName, isActive = true))
-        val intent = Intent(Intent.ACTION_EDIT).apply {
-            setDataAndType(Uri.fromFile(scriptFile), "text/plain")
-        }
-        startActivity(intent)
-        updateScriptList()
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Новый скрипт")
+            .setView(EditText(this).apply { hint = "Имя скрипта" })
+            .setPositiveButton("OK") { _, _ ->
+                val name = (it as EditText).text.toString()
+                if (name.isNotEmpty()) {
+                    val scriptFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$name.sh")
+                    scriptFile.createNewFile()
+                    scriptFile.setExecutable(true)
+                    IniHelper.addScriptConfig(name, ScriptConfig(name = name, isActive = true))
+                    val intent = Intent(Intent.ACTION_EDIT).apply {
+                        setDataAndType(Uri.fromFile(scriptFile), "text/plain")
+                    }
+                    startActivity(intent)
+                    updateScriptList()
+                }
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
     }
 
     private fun onScriptSettings(script: Script) {
@@ -116,6 +156,10 @@ class MainActivity : Activity() {
         if (!TermuxHelper.hasPermission(this)) {
             showPermissionDialog()
         } else {
+            val file = File(script.path)
+            if (!file.canExecute()) {
+                file.setExecutable(true)
+            }
             TermuxHelper.startTermuxSilently(this)
             Thread.sleep(1000)
             TermuxHelper.sendCommand(this, script.path)
@@ -138,4 +182,7 @@ class MainActivity : Activity() {
             .setNegativeButton("Отмена", null)
             .show()
     }
+
+    private val Int.dp: Int
+        get() = (this * resources.displayMetrics.density).toInt()
 }

@@ -46,10 +46,11 @@ COMPILE_SDK=${config["SDK_compileSdk"]:-$DEFAULT_COMPILE_SDK}
 TARGET_SDK=${config["SDK_targetSdk"]:-$DEFAULT_TARGET_SDK}
 MIN_SDK=${config["SDK_minSdk"]:-$DEFAULT_MIN_SDK}
 
-PACKAGE=${config["Common_package"]:-com.yourcompany.yourapp}
+APP_NAME=${config["Common_appName"]:-YourApp}
+PACKAGE_BASE=${config["Common_packageBase"]:-com.yourcompany.yourapp}
+PACKAGE="$PACKAGE_BASE$(echo $APP_NAME | sed 's/YourApp//')" # Уникальный package, напр. com.yourcompany.yourapp3
 VERSION_CODE=${config["Common_versionCode"]:-1}
 VERSION_NAME=${config["Common_versionName"]:-1.0}
-APP_NAME=${config["Common_appName"]:-YourApp}
 MAIN_ACTIVITY_PATH=${config["Common_mainActivityPath"]:-MainActivity.kt}
 ICON_PATH=${config["Common_iconPath"]:-icon.png}
 ICON_DEFAULT=${config["Common_iconDefault"]:-Terminal.png}
@@ -67,6 +68,7 @@ SILENT_ENABLED=${config["SilentActivity_enabled"]:-false}
 SILENT_THEME=${config["SilentActivity_theme"]:-NoDisplay}
 
 echo "✅ SDK: compile=$COMPILE_SDK, target=$TARGET_SDK, min=$MIN_SDK"
+echo "✅ Package: $PACKAGE"
 echo "✅ MainActivity: enabled=$MAIN_ENABLED, theme=$MAIN_THEME"
 echo "✅ ShortcutActivity: enabled=$SHORTCUT_ENABLED, theme=$SHORTCUT_THEME"
 echo "✅ SilentActivity: enabled=$SILENT_ENABLED, theme=$SILENT_THEME"
@@ -93,7 +95,6 @@ done
 JAVA_PATH=$(echo "$PACKAGE" | tr '.' '/')
 
 mkdir -p app/src/main/java/$JAVA_PATH
-mkdir -p gradle/wrapper
 mkdir -p app/src/main/res/values
 mkdir -p app/src/main/res/layout
 mkdir -p app/src/main/res/mipmap-mdpi
@@ -261,17 +262,17 @@ cat > app/src/main/res/layout/script_item.xml << EOF
     </LinearLayout>
     <CheckBox
         android:id="@+id/active_checkbox"
-        android:layout_width="wrap_content"
+        android:layout_width="48dp"
         android:layout_height="wrap_content"
-        android:text="Активен"/>
+        android:text=""/>
     <CheckBox
         android:id="@+id/shortcut_checkbox"
-        android:layout_width="wrap_content"
+        android:layout_width="48dp"
         android:layout_height="wrap_content"
-        android:text="Ярлык"/>
+        android:text=""/>
     <Button
         android:id="@+id/test_button"
-        android:layout_width="wrap_content"
+        android:layout_width="60dp"
         android:layout_height="wrap_content"
         android:text="Тест"/>
 </LinearLayout>
@@ -323,104 +324,18 @@ cat > app/src/main/res/layout/activity_script_settings.xml << EOF
 EOF
 
 # ----------------------------
-# 6. build.gradle
+# 6. ВЫЗОВ gradle_init.sh
 # ----------------------------
-cat > app/build.gradle << EOF
-plugins {
-    id 'com.android.application' version '8.4.0'
-    id 'org.jetbrains.kotlin.android' version '1.9.22'
-}
-
-android {
-    namespace '$PACKAGE'
-    compileSdk $COMPILE_SDK
-
-    defaultConfig {
-        applicationId '$PACKAGE'
-        minSdk $MIN_SDK
-        targetSdk $TARGET_SDK
-        versionCode $VERSION_CODE
-        versionName "$VERSION_NAME"
-    }
-
-    applicationVariants.all { variant ->
-        variant.outputs.all {
-            outputFileName = "$APP_NAME.apk"
-        }
-    }
-
-    signingConfigs {
-        debug {
-            storeFile file("debug.keystore")
-            storePassword "android"
-            keyAlias "androiddebugkey"  
-            keyPassword "android"
-        }
-    }
-
-    buildTypes {
-        debug {
-            signingConfig signingConfigs.debug
-        }
-        release {
-            signingConfig signingConfigs.debug
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-    }
-    
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-    kotlinOptions {
-        jvmTarget = '1.8'
-    }
-}
-
-repositories {
-    google()
-    mavenCentral()
-}
-
-dependencies {
-    implementation 'androidx.recyclerview:recyclerview:1.3.2'
-}
-EOF
+if [ -f "$(dirname "$0")/gradle_init.sh" ]; then
+    chmod +x "$(dirname "$0")/gradle_init.sh"
+    . "$(dirname "$0")/gradle_init.sh"
+else
+    echo "❌ ОШИБКА: gradle_init.sh не найден в $(dirname "$0")"
+    exit 1
+fi
 
 # ----------------------------
-# 7. gradle.properties
-# ----------------------------
-echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8" > gradle.properties
-echo "android.useAndroidX=true" >> gradle.properties
-echo "android.enableJetifier=true" >> gradle.properties
-
-# 8. settings.gradle
-cat > settings.gradle << EOF
-pluginManagement {
-    repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
-}
-rootProject.name = "$APP_NAME"
-include ':app'
-EOF
-
-# ----------------------------
-# 9. Gradle Wrapper
-# ----------------------------
-curl -fsSL -o gradlew https://raw.githubusercontent.com/gradle/gradle/master/gradlew
-curl -fsSL -o gradlew.bat https://raw.githubusercontent.com/gradle/gradle/master/gradlew.bat
-mkdir -p gradle/wrapper
-curl -fsSL -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar
-curl -fsSL -o gradle/wrapper/gradle-wrapper.properties https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.properties
-
-chmod +x gradlew
-
-# ----------------------------
-# 10. ПРОВЕРКА СТРУКТУРЫ
+# 7. ПРОВЕРКА СТРУКТУРЫ
 # ----------------------------
 echo ""
 echo "=== 🔍 ПРОВЕРКА СТРУКТУРЫ ПОСЛЕ СБОРКИ ==="
@@ -435,7 +350,7 @@ if [ -f "app/build.gradle" ]; then echo "✅ build.gradle: сгенериров�
 if [ -f "app/src/main/AndroidManifest.xml" ]; then echo "✅ AndroidManifest.xml: сгенерирован"; else echo "❌ AndroidManifest.xml: отсутствует"; fi
 
 # ----------------------------
-# 11. ЗАПУСК СБОРКИ
+# 8. ЗАПУСК СБОРКИ
 # ----------------------------
 echo ""
 echo "🚀 Запуск ./gradlew assemble${BUILD_TYPE^}..."

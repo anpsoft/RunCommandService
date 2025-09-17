@@ -19,7 +19,7 @@ class ScriptAdapter(
 
     private val scripts = mutableListOf<Script>()
 
-    class ScriptViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    class ScriptViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
         val icon: ImageView = view.findViewById(R.id.script_icon)
         val name: TextView = view.findViewById(R.id.script_name)
         val description: TextView = view.findViewById(R.id.script_description)
@@ -39,9 +39,7 @@ class ScriptAdapter(
 
         holder.icon.setImageResource(
             if (config.icon.isNotEmpty()) {
-                // Загрузка пользовательской иконки из /sdcard/MyScripts/
-                // Реализация позже
-                R.mipmap.ic_no_icon
+                R.mipmap.ic_no_icon // Пока заглушка, позже для пользовательских иконок
             } else {
                 R.mipmap.ic_no_icon
             }
@@ -55,21 +53,22 @@ class ScriptAdapter(
             IniHelper.updateScriptConfig(script.name, config.copy(isActive = isChecked))
         }
         holder.shortcutCheckBox.setOnCheckedChangeListener { _, isChecked ->
+            val shortcutName = config.name.ifEmpty { script.name }
             if (isChecked) {
                 TermuxHelper.createShortcut(
                     context,
-                    config.name.ifEmpty { script.name },
+                    shortcutName,
                     script.path,
                     "${context.packageName}.ShortcutActivity",
                     R.mipmap.ic_shortcut
                 )
             } else {
-                TermuxHelper.deleteShortcut(context, config.name.ifEmpty { script.name }, script.path)
+                TermuxHelper.deleteShortcut(context, shortcutName, script.path)
             }
             IniHelper.updateScriptConfig(script.name, config.copy(hasShortcut = isChecked))
         }
         holder.testButton.setOnClickListener { onTestClick(script) }
-        holder.itemView.setOnLongClickListener {
+        holder.view.setOnLongClickListener {
             onSettingsClick(script)
             true
         }

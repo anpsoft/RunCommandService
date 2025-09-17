@@ -27,33 +27,29 @@ object TermuxHelper {
                 intent.component = ComponentName("com.termux", "com.termux.app.TermuxActivity")
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 context.startActivity(intent)
-                Thread.sleep(3000) // Пауза только если запускаем
+                Thread.sleep(3000)
             }
         } catch (_: Exception) {
-            // молча игнорируем ошибки
         }
     }
 
+    fun sendCommand(context: Context, scriptPath: String, showToast: Boolean = true) {
+        try {
+            val commandIntent = Intent("com.termux.RUN_COMMAND").apply {
+                setClassName("com.termux", "com.termux.app.RunCommandService")
+                putExtra("com.termux.RUN_COMMAND_PATH", scriptPath)
+            }
+            context.startService(commandIntent)
 
-
-fun sendCommand(context: Context, scriptPath: String, showToast: Boolean = true) {
-    try {
-        val commandIntent = Intent("com.termux.RUN_COMMAND").apply {
-            setClassName("com.termux", "com.termux.app.RunCommandService")
-            putExtra("com.termux.RUN_COMMAND_PATH", scriptPath)
-            // Убираем все остальные параметры!
-        }
-        context.startService(commandIntent)
-
-        if (showToast) {
-            Toast.makeText(context, "Команда отправлена", Toast.LENGTH_SHORT).show()
-        }
-    } catch (e: Exception) {
-        if (showToast) {
-            Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
+            if (showToast) {
+                Toast.makeText(context, "Команда отправлена", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            if (showToast) {
+                Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
+            }
         }
     }
-}
 
     fun createShortcut(context: Context, name: String, scriptPath: String, activityClass: String, iconResource: Int) {
         try {
@@ -64,7 +60,7 @@ fun sendCommand(context: Context, scriptPath: String, showToast: Boolean = true)
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
 
-            val uniqueName = name + "_" + System.currentTimeMillis()
+            val uniqueName = name  # Убрал временную метку для избежания накопления
 
             val addIntent = Intent("com.android.launcher.action.INSTALL_SHORTCUT").apply {
                 putExtra(Intent.EXTRA_SHORTCUT_NAME, uniqueName)
@@ -77,26 +73,22 @@ fun sendCommand(context: Context, scriptPath: String, showToast: Boolean = true)
             Toast.makeText(context, "Ошибка создания ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
-    
-    
-    
+
     fun deleteShortcut(context: Context, name: String, scriptPath: String) {
-    try {
-        val shortcutIntent = Intent().apply {
-            component = ComponentName(context.packageName, "${context.packageName}.ShortcutActivity")
-            action = "RUN_SCRIPT"
-            putExtra("script_path", scriptPath)
+        try {
+            val shortcutIntent = Intent().apply {
+                component = ComponentName(context.packageName, "${context.packageName}.ShortcutActivity")
+                action = "RUN_SCRIPT"
+                putExtra("script_path", scriptPath)
+            }
+            val removeIntent = Intent("com.android.launcher.action.UNINSTALL_SHORTCUT").apply {
+                putExtra(Intent.EXTRA_SHORTCUT_NAME, name)
+                putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
+            }
+            context.sendBroadcast(removeIntent)
+            Toast.makeText(context, "Ярлык удалён", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(context, "Ошибка удаления ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
         }
-        val removeIntent = Intent("com.android.launcher.action.UNINSTALL_SHORTCUT").apply {
-            putExtra(Intent.EXTRA_SHORTCUT_NAME, name)
-            putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
-        }
-        context.sendBroadcast(removeIntent)
-    } catch (e: Exception) {
-        Toast.makeText(context, "Ошибка удаления ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
     }
-    
-    
-}
-    
 }
