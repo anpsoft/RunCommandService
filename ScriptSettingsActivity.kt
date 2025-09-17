@@ -1,5 +1,3 @@
-package com.yourcompany.yourapp
-
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
@@ -19,7 +17,11 @@ class ScriptSettingsActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_script_settings)
 
-        val scriptName = intent.getStringExtra("script_name") ?: finish()
+        val scriptName = intent.getStringExtra("script_name")
+        if (scriptName == null) {
+            finish()
+            return
+        }
         val config = IniHelper.getScriptConfig(scriptName)
 
         val nameEdit = findViewById<EditText>(R.id.name_edit)
