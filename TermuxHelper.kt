@@ -1,4 +1,4 @@
-package com.yourcompany.yourapp
+package com.yourcompany.yourapp3
 
 import android.app.ActivityManager
 import android.content.ComponentName
@@ -60,7 +60,7 @@ object TermuxHelper {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
 
-            val uniqueName = name  # Убрал временную метку для избежания накопления
+            val uniqueName = name // Уникальное имя ярлыка
 
             val addIntent = Intent("com.android.launcher.action.INSTALL_SHORTCUT").apply {
                 putExtra(Intent.EXTRA_SHORTCUT_NAME, uniqueName)
