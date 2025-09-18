@@ -80,7 +80,6 @@ class ScriptSettingsActivity : Activity() {
                     }
                     .setNegativeButton("Отмена", null)
                     .show()
-            }
         }
         val deleteButton = Button(this).apply {
             text = "Удалить"
@@ -171,7 +170,7 @@ class ScriptSettingsActivity : Activity() {
 
     private fun getIconResource(iconName: String): Int {
         return when (iconName) {
-            "icon.png" -> R.mipmap.icon
+            "icon.png" -> R.mipmap.ic_launcher
             "Terminal.png" -> R.mipmap.ic_shortcut
             "no_icon.png" -> R.mipmap.ic_no_icon
             else -> R.mipmap.ic_no_icon

@@ -59,12 +59,12 @@ class ScriptAdapter(
             val shortcutCheckBox = CheckBox(context).apply {
                 tag = "shortcut_checkbox"
                 contentDescription = "Ярлык"
-                layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_content)
+                layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
             }
             val testButton = Button(context).apply {
                 tag = "test_button"
                 text = "▶️"
-                layoutParams = LinearLayout.LayoutParams(60.dp, LinearLayout.LayoutParams.WRAP_content).apply {
+                layoutParams = LinearLayout.LayoutParams(60.dp, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                     setPadding(4.dp, 4.dp, 4.dp, 4.dp)
                 }
             }
@@ -77,64 +77,63 @@ class ScriptAdapter(
         return ScriptViewHolder(view)
     }
 
-// Блок 5: onBindViewHolder
-override fun onBindViewHolder(holder: ScriptViewHolder, position: Int) {
-    val script = scripts[position]
-    val config = IniHelper.getScriptConfig(script.name)
+    override fun onBindViewHolder(holder: ScriptViewHolder, position: Int) {
+        val script = scripts[position]
+        val config = IniHelper.getScriptConfig(script.name)
 
-    val iconFile = File(Environment.getExternalStorageDirectory(), "MyScripts/icons/${config.icon}")
-    if (config.icon.isNotEmpty() && iconFile.exists()) {
-        holder.icon.setImageURI(Uri.fromFile(iconFile))
-    } else {
-        holder.icon.setImageResource(getIconResource(config.icon))
-    }
-    holder.name.text = config.name.ifEmpty { script.name }
-    holder.description.text = config.description
-    holder.activeCheckBox.isChecked = config.isActive
-    holder.shortcutCheckBox.isChecked = config.hasShortcut
-    holder.activeCheckBox.visibility = View.VISIBLE
-    holder.shortcutCheckBox.visibility = View.VISIBLE
-
-    holder.activeCheckBox.setOnCheckedChangeListener { _, isChecked ->
-        IniHelper.updateScriptConfig(script.name, config.copy(isActive = isChecked))
-    }
-    holder.shortcutCheckBox.setOnCheckedChangeListener { _, isChecked ->
-        val shortcutName = config.name.ifEmpty { script.name }
-        if (isChecked) {
-            TermuxHelper.createShortcut(
-                context,
-                shortcutName,
-                script.path,
-                "${context.packageName}.ShortcutActivity",
-                if (config.icon.isNotEmpty() && iconFile.exists()) iconFile.path else null
-            )
+        val iconFile = File(Environment.getExternalStorageDirectory(), "MyScripts/icons/${config.icon}")
+        if (config.icon.isNotEmpty() && iconFile.exists()) {
+            holder.icon.setImageURI(Uri.fromFile(iconFile))
         } else {
-            TermuxHelper.deleteShortcut(context, shortcutName, script.path)
+            holder.icon.setImageResource(getIconResource(config.icon))
         }
-        IniHelper.updateScriptConfig(script.name, config.copy(hasShortcut = isChecked))
-    }
-    holder.testButton.setOnClickListener { onTestClick(script) }
-    holder.view.setOnLongClickListener {
-        onSettingsClick(script)
-        true
-    }
-}
+        holder.name.text = config.name.ifEmpty { script.name }
+        holder.description.text = config.description
+        holder.activeCheckBox.isChecked = config.isActive
+        holder.shortcutCheckBox.isChecked = config.hasShortcut
+        holder.activeCheckBox.visibility = View.VISIBLE
+        holder.shortcutCheckBox.visibility = View.VISIBLE
 
-// Блок 6: Вспомогательная функция
-private fun getIconResource(iconName: String): Int {
-    return when (iconName) {
-        "icon.png" -> R.mipmap.icon
-        "Terminal.png" -> R.mipmap.ic_shortcut
-        "no_icon.png" -> R.mipmap.ic_no_icon
-        else -> R.mipmap.ic_no_icon
+        holder.activeCheckBox.setOnCheckedChangeListener { _, isChecked ->
+            IniHelper.updateScriptConfig(script.name, config.copy(isActive = isChecked))
+        }
+        holder.shortcutCheckBox.setOnCheckedChangeListener { _, isChecked ->
+            val shortcutName = config.name.ifEmpty { script.name }
+            if (isChecked) {
+                TermuxHelper.createShortcut(
+                    context,
+                    shortcutName,
+                    script.path,
+                    "${context.packageName}.ShortcutActivity",
+                    if (config.icon.isNotEmpty() && iconFile.exists()) iconFile.path else null
+                )
+            } else {
+                TermuxHelper.deleteShortcut(context, shortcutName, script.path)
+            }
+            IniHelper.updateScriptConfig(script.name, config.copy(hasShortcut = isChecked))
+        }
+        holder.testButton.setOnClickListener { onTestClick(script) }
+        holder.view.setOnLongClickListener {
+            onSettingsClick(script)
+            true
+        }
     }
-}
+
     override fun getItemCount(): Int = scripts.size
 
     fun updateScripts(newScripts: List<Script>) {
         scripts.clear()
         scripts.addAll(newScripts)
         notifyDataSetChanged()
+    }
+
+    private fun getIconResource(iconName: String): Int {
+        return when (iconName) {
+            "icon.png" -> R.mipmap.ic_launcher
+            "Terminal.png" -> R.mipmap.ic_shortcut
+            "no_icon.png" -> R.mipmap.ic_no_icon
+            else -> R.mipmap.ic_no_icon
+        }
     }
 
     private val Int.dp: Int
