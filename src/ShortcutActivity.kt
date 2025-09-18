@@ -4,7 +4,9 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
+import java.io.File
 
 class ShortcutActivity : Activity() {
     
@@ -20,35 +22,49 @@ class ShortcutActivity : Activity() {
             }
             
             scriptPath?.let { 
+                val file = File(it)
+                if (!file.exists()) {
+                    Toast.makeText(this, "Скрипт не существует: $it", Toast.LENGTH_SHORT).show()
+                    finish()
+                    return
+                }
+                if (!file.canExecute()) {
+                    val success = file.setExecutable(true)
+                    Log.d("ShortcutActivity", "Set executable for $it: $success")
+                    if (!success) {
+                        Toast.makeText(this, "Не удалось сделать скрипт исполняемым", Toast.LENGTH_SHORT).show()
+                        finish()
+                        return
+                    }
+                }
                 TermuxHelper.startTermuxSilently(this)
-                // Небольшая задержка
                 Thread.sleep(1000)
-                TermuxHelper.sendCommand(this, it, showToast = true) 
+                TermuxHelper.sendCommand(this, it, showToast = true)
             }
             finish()
-            } else {
+        } else {
             finish()
         }
     }
     
     private fun showPermissionDialog() {
         AlertDialog.Builder(this)
-        .setTitle("Требуется разрешение")
-        .setMessage("Для работы с Termux нужно предоставить разрешение в настройках приложения")
-        .setPositiveButton("Открыть настройки") { _, _ ->
-            try {
-                val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                intent.data = android.net.Uri.parse("package:$packageName")
-                startActivity(intent)
+            .setTitle("Требуется разрешение")
+            .setMessage("Для работы с Termux нужно предоставить разрешение в настройках приложения")
+            .setPositiveButton("Открыть настройки") { _, _ ->
+                try {
+                    val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    intent.data = android.net.Uri.parse("package:$packageName")
+                    startActivity(intent)
                 } catch (e: Exception) {
-                Toast.makeText(this, "Не удалось открыть настройки", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Не удалось открыть настройки", Toast.LENGTH_SHORT).show()
+                }
+                finish()
             }
-            finish()
-        }
-        .setNegativeButton("Отмена") { _, _ ->
-            finish()
-        }
-        .setCancelable(false)
-        .show()
+            .setNegativeButton("Отмена") { _, _ ->
+                finish()
+            }
+            .setCancelable(false)
+            .show()
     }
 }

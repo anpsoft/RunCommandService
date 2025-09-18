@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -108,7 +109,8 @@ class MainActivity : Activity() {
         val permissions = arrayOf(
             "android.permission.READ_EXTERNAL_STORAGE",
             "android.permission.WRITE_EXTERNAL_STORAGE",
-            "com.android.launcher.permission.INSTALL_SHORTCUT"
+            "com.android.launcher.permission.INSTALL_SHORTCUT",
+            "com.termux.permission.RUN_COMMAND"
         )
         ActivityCompat.requestPermissions(this, permissions, 1)
     }
@@ -157,8 +159,17 @@ class MainActivity : Activity() {
             showPermissionDialog()
         } else {
             val file = File(script.path)
+            if (!file.exists()) {
+                Toast.makeText(this, "Скрипт не существует: ${script.path}", Toast.LENGTH_SHORT).show()
+                return
+            }
             if (!file.canExecute()) {
-                file.setExecutable(true)
+                val success = file.setExecutable(true)
+                Log.d("MainActivity", "Set executable for ${script.path}: $success")
+                if (!success) {
+                    Toast.makeText(this, "Не удалось сделать скрипт исполняемым", Toast.LENGTH_SHORT).show()
+                    return
+                }
             }
             TermuxHelper.startTermuxSilently(this)
             Thread.sleep(1000)
