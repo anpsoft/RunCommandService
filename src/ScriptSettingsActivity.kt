@@ -45,7 +45,7 @@ class ScriptSettingsActivity : Activity() {
             if (config.icon.isNotEmpty() && iconFile.exists()) {
                 setImageURI(Uri.fromFile(iconFile))
             } else {
-                setImageResource(getIconResource(config.icon))
+                setImageResource(R.mipmap.ic_no_icon)
             }
             layoutParams = LinearLayout.LayoutParams(48.dp, 48.dp)
         }
@@ -80,6 +80,7 @@ class ScriptSettingsActivity : Activity() {
                     }
                     .setNegativeButton("Отмена", null)
                     .show()
+            }
         }
         val deleteButton = Button(this).apply {
             text = "Удалить"
@@ -106,6 +107,7 @@ class ScriptSettingsActivity : Activity() {
                 )
                 IniHelper.updateScriptConfig(scriptName, config)
                 Toast.makeText(this@ScriptSettingsActivity, "Сохранено", Toast.LENGTH_SHORT).show()
+                finish()
             }
         }
         val cancelButton = Button(this).apply {
@@ -126,14 +128,14 @@ class ScriptSettingsActivity : Activity() {
         setContentView(layout)
 
         nameEdit.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {}
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) { }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) { }
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { }
         })
         descriptionEdit.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {}
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) { }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) { }
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { }
         })
         activeCheckBox.setOnCheckedChangeListener { _, isChecked ->
             config = config.copy(isActive = isChecked)
@@ -158,6 +160,7 @@ class ScriptSettingsActivity : Activity() {
                 IniHelper.updateScriptConfig(scriptName, newConfig)
                 iconView.setImageURI(Uri.fromFile(icons[position]))
                 Toast.makeText(this@ScriptSettingsActivity, "Иконка выбрана", Toast.LENGTH_SHORT).show()
+                finish()
             }
         }
 
@@ -166,15 +169,6 @@ class ScriptSettingsActivity : Activity() {
             .setView(gridView)
             .setNegativeButton("Отмена", null)
             .show()
-    }
-
-    private fun getIconResource(iconName: String): Int {
-        return when (iconName) {
-            "icon.png" -> R.mipmap.ic_launcher
-            "Terminal.png" -> R.mipmap.ic_shortcut
-            "no_icon.png" -> R.mipmap.ic_no_icon
-            else -> R.mipmap.ic_no_icon
-        }
     }
 
     private val Int.dp: Int
