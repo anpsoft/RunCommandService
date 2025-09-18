@@ -32,9 +32,14 @@ class ShortcutActivity : Activity() {
                     val success = file.setExecutable(true)
                     Log.d("ShortcutActivity", "Set executable for $it: $success")
                     if (!success) {
-                        Toast.makeText(this, "Не удалось сделать скрипт исполняемым", Toast.LENGTH_SHORT).show()
-                        finish()
-                        return
+                        // Пробуем chmod +x через Termux
+                        TermuxHelper.sendCommand(this, "chmod +x $it", showToast = false)
+                        Log.d("ShortcutActivity", "Attempted chmod +x for $it via Termux")
+                        if (!file.canExecute()) {
+                            Toast.makeText(this, "Не удалось сделать скрипт исполняемым", Toast.LENGTH_SHORT).show()
+                            finish()
+                            return
+                        }
                     }
                 }
                 TermuxHelper.startTermuxSilently(this)

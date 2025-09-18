@@ -58,13 +58,12 @@ class MainActivity : Activity() {
         layout.addView(createShortcutButton)
         layout.addView(runCommandButton)
 
-        // Шапка для списка
         val headerLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             addView(TextView(this@MainActivity).apply { text = "Иконка"; width = 48.dp })
             addView(TextView(this@MainActivity).apply { text = "Имя / Описание"; setPadding(8.dp, 0, 0, 0); layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) })
-            addView(TextView(this@MainActivity).apply { text = ""; width = 48.dp }) // Для активен
-            addView(TextView(this@MainActivity).apply { text = ""; width = 48.dp }) // Для ярлык
+            addView(TextView(this@MainActivity).apply { text = ""; width = 48.dp })
+            addView(TextView(this@MainActivity).apply { text = ""; width = 48.dp })
             addView(TextView(this@MainActivity).apply { text = "Тест"; width = 60.dp })
         }
         layout.addView(headerLayout)
@@ -76,7 +75,6 @@ class MainActivity : Activity() {
         recyclerView.adapter = adapter
         layout.addView(recyclerView)
 
-        // Кнопки внизу в одной строке
         val bottomButtons = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
         }
@@ -157,24 +155,29 @@ class MainActivity : Activity() {
     private fun onTestRun(script: Script) {
         if (!TermuxHelper.hasPermission(this)) {
             showPermissionDialog()
-        } else {
-            val file = File(script.path)
-            if (!file.exists()) {
-                Toast.makeText(this, "Скрипт не существует: ${script.path}", Toast.LENGTH_SHORT).show()
-                return
-            }
-            if (!file.canExecute()) {
-                val success = file.setExecutable(true)
-                Log.d("MainActivity", "Set executable for ${script.path}: $success")
-                if (!success) {
+            return
+        }
+        val file = File(script.path)
+        if (!file.exists()) {
+            Toast.makeText(this, "Скрипт не существует: ${script.path}", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (!file.canExecute()) {
+            val success = file.setExecutable(true)
+            Log.d("MainActivity", "Set executable for ${script.path}: $success")
+            if (!success) {
+                // Пробуем chmod +x через Termux
+                TermuxHelper.sendCommand(this, "chmod +x ${script.path}", showToast = false)
+                Log.d("MainActivity", "Attempted chmod +x for ${script.path} via Termux")
+                if (!file.canExecute()) {
                     Toast.makeText(this, "Не удалось сделать скрипт исполняемым", Toast.LENGTH_SHORT).show()
                     return
                 }
             }
-            TermuxHelper.startTermuxSilently(this)
-            Thread.sleep(1000)
-            TermuxHelper.sendCommand(this, script.path)
         }
+        TermuxHelper.startTermuxSilently(this)
+        Thread.sleep(1000)
+        TermuxHelper.sendCommand(this, script.path)
     }
 
     private fun showPermissionDialog() {
