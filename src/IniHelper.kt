@@ -27,7 +27,7 @@ object IniHelper {
     }
 
     fun updateScriptConfig(scriptName: String, config: ScriptConfig) {
-        val section = ini.add(scriptName)
+        val section = ini[scriptName] ?: ini.add(scriptName)
         section["name"] = config.name
         section["description"] = config.description
         section["icon"] = config.icon

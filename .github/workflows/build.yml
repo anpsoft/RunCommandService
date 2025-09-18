@@ -17,10 +17,15 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+          
       - name: Build with Gradle
         run: ./gradlew assemble${{ env.BUILD_TYPE || 'debug' }}
+        
       - name: Fix APK timestamp
-        run: touch -d "$(TZ=Europe/Kiev date)" app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/*.apk
+        run: |
+          echo "Current time: $(TZ=Europe/Kiev date)"
+          touch -d "$(TZ=Europe/Kiev date)" app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/*.apk
+          
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:

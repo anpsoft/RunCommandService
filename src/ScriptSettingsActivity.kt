@@ -1,6 +1,7 @@
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.text.Editable
@@ -8,6 +9,7 @@ import android.text.TextWatcher
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.GridView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Toast
@@ -44,7 +46,7 @@ class ScriptSettingsActivity : Activity() {
         }
         val iconButton = Button(this).apply {
             text = "Выбрать иконку"
-            setOnClickListener { showIconPicker(scriptName, config) }
+            setOnClickListener { showIconPicker(scriptName, config, iconView) }
         }
         val activeCheckBox = CheckBox(this).apply {
             isChecked = config.isActive
@@ -90,6 +92,22 @@ class ScriptSettingsActivity : Activity() {
                     .show()
             }
         }
+        val saveButton = Button(this).apply {
+            text = "Сохранить"
+            setOnClickListener {
+                config = config.copy(
+                    name = nameEdit.text.toString(),
+                    description = descriptionEdit.text.toString(),
+                    isActive = activeCheckBox.isChecked
+                )
+                IniHelper.updateScriptConfig(scriptName, config)
+                Toast.makeText(this@ScriptSettingsActivity, "Сохранено", Toast.LENGTH_SHORT).show()
+            }
+        }
+        val cancelButton = Button(this).apply {
+            text = "Отмена"
+            setOnClickListener { finish() }
+        }
 
         layout.addView(nameEdit)
         layout.addView(descriptionEdit)
@@ -98,6 +116,8 @@ class ScriptSettingsActivity : Activity() {
         layout.addView(activeCheckBox)
         layout.addView(renameButton)
         layout.addView(deleteButton)
+        layout.addView(saveButton)
+        layout.addView(cancelButton)
 
         setContentView(layout)
 
@@ -121,12 +141,11 @@ class ScriptSettingsActivity : Activity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
         activeCheckBox.setOnCheckedChangeListener { _, isChecked ->
-            config = config.copy(isActive = isChecked)
-            IniHelper.updateScriptConfig(scriptName, config)
+            saveChanges()
         }
     }
 
-    private fun showIconPicker(scriptName: String, config: ScriptConfig) {
+    private fun showIconPicker(scriptName: String, config: ScriptConfig, iconView: ImageView) {
         val iconsDir = File(Environment.getExternalStorageDirectory(), "MyScripts/icons")
         iconsDir.mkdirs()
         val icons = iconsDir.listFiles { _, name -> name.endsWith(".png") || name.endsWith(".jpg") } ?: arrayOf()
@@ -135,13 +154,14 @@ class ScriptSettingsActivity : Activity() {
             return
         }
 
-        val gridView = android.widget.GridView(this).apply {
+        val gridView = GridView(this).apply {
             numColumns = 3
             adapter = IconAdapter(this@ScriptSettingsActivity, icons.toList())
             setOnItemClickListener { _, _, position, _ ->
                 val selectedIcon = icons[position].name
                 val newConfig = config.copy(icon = selectedIcon)
                 IniHelper.updateScriptConfig(scriptName, newConfig)
+                iconView.setImageURI(Uri.fromFile(icons[position]))
                 Toast.makeText(this@ScriptSettingsActivity, "Иконка выбрана", Toast.LENGTH_SHORT).show()
                 finish()
             }

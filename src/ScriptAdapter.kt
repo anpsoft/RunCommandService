@@ -1,6 +1,7 @@
 package com.yourcompany.yourapp
 
 import android.content.Context
+import android.net.Uri
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
@@ -51,17 +52,17 @@ class ScriptAdapter(
             val activeCheckBox = CheckBox(context).apply {
                 tag = "active_checkbox"
                 contentDescription = "Активен"
+                layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
             }
             val shortcutCheckBox = CheckBox(context).apply {
                 tag = "shortcut_checkbox"
                 contentDescription = "Ярлык"
+                layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
             }
             val testButton = Button(context).apply {
                 tag = "test_button"
                 text = "▶️"
-                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                    width = 0
-                    minimumWidth = 0
+                layoutParams = LinearLayout.LayoutParams(60.dp, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                     setPadding(4.dp, 4.dp, 4.dp, 4.dp)
                 }
             }
@@ -79,12 +80,24 @@ class ScriptAdapter(
         val config = IniHelper.getScriptConfig(script.name)
 
         holder.icon.setImageResource(
-            if (config.icon.isNotEmpty()) R.mipmap.ic_no_icon else R.mipmap.ic_no_icon
+            if (config.icon.isNotEmpty()) {
+                val iconFile = File(Environment.getExternalStorageDirectory(), "MyScripts/icons/${config.icon}")
+                if (iconFile.exists()) {
+                    holder.icon.setImageURI(Uri.fromFile(iconFile))
+                    R.mipmap.ic_no_icon
+                } else {
+                    R.mipmap.ic_no_icon
+                }
+            } else {
+                R.mipmap.ic_no_icon
+            }
         )
         holder.name.text = config.name.ifEmpty { script.name }
         holder.description.text = config.description
         holder.activeCheckBox.isChecked = config.isActive
         holder.shortcutCheckBox.isChecked = config.hasShortcut
+        holder.activeCheckBox.visibility = View.VISIBLE
+        holder.shortcutCheckBox.visibility = View.VISIBLE
 
         holder.activeCheckBox.setOnCheckedChangeListener { _, isChecked ->
             IniHelper.updateScriptConfig(script.name, config.copy(isActive = isChecked))
@@ -97,7 +110,16 @@ class ScriptAdapter(
                     shortcutName,
                     script.path,
                     "${context.packageName}.ShortcutActivity",
-                    R.mipmap.ic_shortcut
+                    if (config.icon.isNotEmpty()) {
+                        val iconFile = File(Environment.getExternalStorageDirectory(), "MyScripts/icons/${config.icon}")
+                        if (iconFile.exists()) {
+                            android.content.Intent.ShortcutIconResource.fromContext(context, context.resources.getIdentifier(config.icon.removeSuffix(".png"), "mipmap", context.packageName))
+                        } else {
+                            android.content.Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_shortcut)
+                        }
+                    } else {
+                        android.content.Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_shortcut)
+                    }
                 )
             } else {
                 TermuxHelper.deleteShortcut(context, shortcutName, script.path)
