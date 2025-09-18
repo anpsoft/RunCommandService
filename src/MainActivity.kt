@@ -132,7 +132,7 @@ class MainActivity : Activity() {
                 if (name.isNotEmpty()) {
                     val scriptFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$name.sh")
                     scriptFile.createNewFile()
-                    scriptFile.setExecutable(true)
+
                     IniHelper.addScriptConfig(name, ScriptConfig(name = name, isActive = true))
                     val intent = Intent(Intent.ACTION_EDIT).apply {
                         setDataAndType(Uri.fromFile(scriptFile), "text/plain")
@@ -152,33 +152,22 @@ class MainActivity : Activity() {
         startActivity(intent)
     }
 
-    private fun onTestRun(script: Script) {
-        if (!TermuxHelper.hasPermission(this)) {
-            showPermissionDialog()
-            return
-        }
-        val file = File(script.path)
-        if (!file.exists()) {
-            Toast.makeText(this, "Скрипт не существует: ${script.path}", Toast.LENGTH_SHORT).show()
-            return
-        }
-        if (!file.canExecute()) {
-            val success = file.setExecutable(true)
-            Log.d("MainActivity", "Set executable for ${script.path}: $success")
-            if (!success) {
-                // Пробуем chmod +x через Termux
-                TermuxHelper.sendCommand(this, "chmod +x ${script.path}", showToast = false)
-                Log.d("MainActivity", "Attempted chmod +x for ${script.path} via Termux")
-                if (!file.canExecute()) {
-                    Toast.makeText(this, "Не удалось сделать скрипт исполняемым", Toast.LENGTH_SHORT).show()
-                    return
-                }
-            }
-        }
-        TermuxHelper.startTermuxSilently(this)
-        Thread.sleep(1000)
-        TermuxHelper.sendCommand(this, script.path)
+private fun onTestRun(script: Script) {
+    if (!TermuxHelper.hasPermission(this)) {
+        showPermissionDialog()
+        return
     }
+    val file = File(script.path)
+    if (!file.exists()) {
+        Toast.makeText(this, "Скрипт не существует: ${script.path}", Toast.LENGTH_SHORT).show()
+        return
+    }
+    TermuxHelper.startTermuxSilently(this)
+    Thread.sleep(1500)
+    TermuxHelper.sendCommand(this, script.path)
+}
+
+
 
     private fun showPermissionDialog() {
         AlertDialog.Builder(this)

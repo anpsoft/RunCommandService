@@ -33,23 +33,31 @@ object TermuxHelper {
         }
     }
 
-    fun sendCommand(context: Context, scriptPath: String, showToast: Boolean = true) {
-        try {
-            val commandIntent = Intent("com.termux.RUN_COMMAND").apply {
-                setClassName("com.termux", "com.termux.app.RunCommandService")
-                putExtra("com.termux.RUN_COMMAND_PATH", scriptPath)
-            }
-            context.startService(commandIntent)
+fun sendCommand(context: Context, scriptPath: String, showToast: Boolean = true) {
+    try {
+        val termuxScriptPath = scriptPath.replace("/sdcard", "/storage/emulated/0")
+        val startShPath = "/data/data/com.termux/files/home/Start.sh"
+        val commandIntent = Intent("com.termux.RUN_COMMAND").apply {
+            setClassName("com.termux", "com.termux.app.RunCommandService")
+            putExtra("com.termux.RUN_COMMAND_PATH", startShPath)
+            putExtra("com.termux.RUN_COMMAND_ARGUMENTS", arrayOf(termuxScriptPath))
+            putExtra("com.termux.RUN_COMMAND_WORKDIR", "/data/data/com.termux/files/home")
+            putExtra("com.termux.RUN_COMMAND_BACKGROUND", false)
+            putExtra("com.termux.RUN_COMMAND_SESSION_ACTION", "0")
+        }
+        context.startService(commandIntent)
 
-            if (showToast) {
-                Toast.makeText(context, "Команда отправлена", Toast.LENGTH_SHORT).show()
-            }
-        } catch (e: Exception) {
-            if (showToast) {
-                Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
-            }
+        if (showToast) {
+            Toast.makeText(context, "Команда отправлена", Toast.LENGTH_SHORT).show()
+        }
+    } catch (e: Exception) {
+        Log.e("TermuxHelper", "Failed to send command for $scriptPath: ${e.message}")
+        if (showToast) {
+            Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
+}
+
 
     fun createShortcut(context: Context, name: String, scriptPath: String, activityClass: String, iconResource: Int) {
         try {
