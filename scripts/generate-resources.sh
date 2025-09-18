@@ -3,7 +3,6 @@
 cat << EOF > app/src/main/AndroidManifest.xml
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="$PACKAGE">
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT"/>
@@ -48,7 +47,7 @@ EOF
 # Копирование XML из templates/layout/
 if [ -d "templates/layout" ]; then
     for xml_file in $(find templates/layout -name "*.xml"); do
-        xml_name=$(basename "$xml_file")
+    xml_name=$(basename "$xml_file")
         cp "$xml_file" "app/src/main/res/layout/$xml_name"
         echo "✅ Копирован: $xml_name в layout"
     done

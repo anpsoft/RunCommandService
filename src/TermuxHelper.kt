@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.widget.Toast
+import android.util.Log
 
 object TermuxHelper {
     const val TERMUX_PERMISSION = "com.termux.permission.RUN_COMMAND"
