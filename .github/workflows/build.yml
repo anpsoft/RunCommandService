@@ -5,29 +5,42 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
+      BUILD_TYPE: debug
       TZ: Europe/Kyiv
+
     steps:
       - uses: actions/checkout@v4
+
       - name: Initialize project
         run: bash .github/workflows/init-android.sh
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
+
       - name: Build with Gradle
-        run: ./gradlew assemble${{ env.BUILD_TYPE || 'debug' }}
-      - name: Verify APK
-        run: ls -l app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/
-      - name: Fix APK timestamp
+        run: ./gradlew assemble${{ env.BUILD_TYPE }}
+
+      - name: Find built APK
+        id: find_apk
         run: |
-          KYIV_TIME=$(date +%Y%m%d%H%M.%S)
-          echo "Kyiv time: $KYIV_TIME"
-          touch -t "$KYIV_TIME" app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/YourApp5.apk
-          stat -c "File: %n, Time: %y, Size: %s bytes" app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/YourApp5.apk
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
+          APK_PATH=$(find app/build/outputs/apk/${{ env.BUILD_TYPE }}/ -name "*.apk" | head -n 1)
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+          echo "apk_name=$(basename "$APK_PATH")" >> $GITHUB_OUTPUT
+
+      - name: Delete old assets from nightly release
+        run: |
+          gh release view nightly --json assets -q '.assets[].name' | while read asset; do
+            gh release delete-asset nightly "$asset" -y
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload APK to nightly release
+        uses: softprops/action-gh-release@v2
         with:
-          name: app-${{ env.BUILD_TYPE || 'debug' }}-apk
-          path: app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/YourApp5.apk
-          compression-level: 0
+          tag_name: nightly
+          files: ${{ steps.find_apk.outputs.apk_path }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Print direct APK URL
+        run: |
+          echo "Direct APK URL:"
+          echo "https://github.com/${GITHUB_REPOSITORY}/releases/download/nightly/${{ steps.find_apk.outputs.apk_name }}"
