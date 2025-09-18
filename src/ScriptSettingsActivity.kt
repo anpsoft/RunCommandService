@@ -56,6 +56,10 @@ class ScriptSettingsActivity : Activity() {
         val activeCheckBox = CheckBox(this).apply {
             isChecked = config.isActive
             contentDescription = "Активен"
+            setOnCheckedChangeListener { _, isChecked ->
+                config = config.copy(isActive = isChecked)
+                IniHelper.updateScriptConfig(scriptName, config)
+            }
         }
         val renameButton = Button(this).apply {
             text = "Переименовать"
@@ -64,18 +68,14 @@ class ScriptSettingsActivity : Activity() {
                 AlertDialog.Builder(this@ScriptSettingsActivity)
                     .setTitle("Переименовать скрипт")
                     .setView(newNameEdit)
-                    .setPositiveButton("ОК") { _, _ ->
+                    .setPositiveButton("Ок") { _, _ ->
                         val newName = newNameEdit.text.toString()
-                        if (newName != scriptName && newName.isNotEmpty()) {
+                        if (newName.isNotEmpty() && newName != scriptName) {
+                            IniHelper.renameScriptConfig(scriptName, newName, config)
                             val oldFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh")
                             val newFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$newName.sh")
-                            if (oldFile.exists() && !newFile.exists() && oldFile.renameTo(newFile)) {
-                                IniHelper.renameScriptConfig(scriptName, newName, config.copy(name = newName))
-                                Toast.makeText(this@ScriptSettingsActivity, "Скрипт переименован", Toast.LENGTH_SHORT).show()
-                                finish()
-                            } else {
-                                Toast.makeText(this@ScriptSettingsActivity, "Ошибка переименования", Toast.LENGTH_SHORT).show()
-                            }
+                            if (oldFile.exists()) oldFile.renameTo(newFile)
+                            finish()
                         }
                     }
                     .setNegativeButton("Отмена", null)
@@ -86,7 +86,6 @@ class ScriptSettingsActivity : Activity() {
             text = "Удалить"
             setOnClickListener {
                 AlertDialog.Builder(this@ScriptSettingsActivity)
-                    .setTitle("Удалить скрипт")
                     .setMessage("Уверены?")
                     .setPositiveButton("Да") { _, _ ->
                         File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh").delete()
@@ -126,20 +125,6 @@ class ScriptSettingsActivity : Activity() {
         layout.addView(cancelButton)
 
         setContentView(layout)
-
-        nameEdit.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) { }
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) { }
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { }
-        })
-        descriptionEdit.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) { }
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) { }
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { }
-        })
-        activeCheckBox.setOnCheckedChangeListener { _, isChecked ->
-            config = config.copy(isActive = isChecked)
-        }
     }
 
     private fun showIconPicker(scriptName: String, config: ScriptConfig, iconView: ImageView) {

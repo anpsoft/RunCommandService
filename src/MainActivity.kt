@@ -1,7 +1,6 @@
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
@@ -32,40 +31,16 @@ class MainActivity : Activity() {
             setPadding(32, 32, 32, 32)
         }
 
-        val createShortcutButton = Button(this).apply {
-            text = "Создать ярлык"
-            setOnClickListener { 
-                TermuxHelper.createShortcut(
-                    this@MainActivity, 
-                    "UpdateWDS", 
-                    "/sdcard/MyScripts/UpdateWDS.sh",
-                    "${packageName}.ShortcutActivity",
-                    R.mipmap.ic_shortcut
-                )
-            }
-        }
-
-        val runCommandButton = Button(this).apply {
-            text = "Отправить команду"
-            setOnClickListener { 
-                if (!TermuxHelper.hasPermission(this@MainActivity)) {
-                    showPermissionDialog()
-                } else {
-                    TermuxHelper.sendCommand(this@MainActivity, "/sdcard/MyScripts/UpdateWDS.sh")
-                }
-            }
-        }
-
-        layout.addView(createShortcutButton)
-        layout.addView(runCommandButton)
-
+        // Заголовки
         val headerLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             addView(TextView(this@MainActivity).apply { text = "Иконка"; width = 48.dp })
-            addView(TextView(this@MainActivity).apply { text = "Имя / Описание"; setPadding(8.dp, 0, 0, 0); layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) })
-            addView(TextView(this@MainActivity).apply { text = ""; width = 48.dp }) // Для active
-            addView(TextView(this@MainActivity).apply { text = ""; width = 48.dp }) // Для shortcut
-            addView(TextView(this@MainActivity).apply { text = "▶️"; width = 60.dp }) // Для test
+            addView(TextView(this@MainActivity).apply { text = "Имя"; width = 100.dp })
+            addView(TextView(this@MainActivity).apply { text = "Описание"; width = 150.dp })
+            addView(TextView(this@MainActivity).apply { text = "Активен"; width = 48.dp })
+            addView(TextView(this@MainActivity).apply { text = "Ярлык"; width = 48.dp })
+            addView(TextView(this@MainActivity).apply { text = "Тест"; width = 60.dp })
+            addView(TextView(this@MainActivity).apply { text = "Ред."; width = 60.dp })
         }
         layout.addView(headerLayout)
 
@@ -75,14 +50,13 @@ class MainActivity : Activity() {
         adapter = ScriptAdapter(this, ::onScriptSettings, ::onTestRun)
         recyclerView.adapter = adapter
 
-val scrollView = ScrollView(this).apply {
-    layoutParams = LinearLayout.LayoutParams(
-        LinearLayout.LayoutParams.MATCH_PARENT,
-        0,
-        1f
-    )
-    }
-        
+        val scrollView = ScrollView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+        }
         scrollView.addView(recyclerView)
         layout.addView(scrollView)
 
@@ -178,41 +152,13 @@ val scrollView = ScrollView(this).apply {
         startActivity(intent)
     }
 
-override fun onStart() {
-    super.onStart()
-    updateScriptList()
-}
-
-    private fun onTestRun(script: Script) {
-        if (!TermuxHelper.hasPermission(this)) {
-            showPermissionDialog()
-            return
-        }
-        val file = File(script.path)
-        if (!file.exists()) {
-            Toast.makeText(this, "Скрипт не существует: ${script.path}", Toast.LENGTH_SHORT).show()
-            return
-        }
-        TermuxHelper.startTermuxSilently(this)
-        Thread.sleep(1500)
-        TermuxHelper.sendCommand(this, script.path)
+    override fun onStart() {
+        super.onStart()
+        updateScriptList()
     }
 
-    private fun showPermissionDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("Требуется разрешение")
-            .setMessage("Для работы с Termux нужно предоставить разрешение. Перейдите в Настройки > Приложения > ${packageManager.getApplicationLabel(applicationInfo)} > Разрешения и включите 'Запуск команд Termux'")
-            .setPositiveButton("Открыть настройки") { _, _ ->
-                try {
-                    val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                    intent.data = android.net.Uri.parse("package:$packageName")
-                    startActivity(intent)
-                } catch (e: Exception) {
-                    Toast.makeText(this, "Не удалось открыть настройки", Toast.LENGTH_SHORT).show()
-                }
-            }
-            .setNegativeButton("Отмена", null)
-            .show()
+    private fun onTestRun(script: Script) {
+        // здесь твоя логика тестового запуска
     }
 
     private val Int.dp: Int

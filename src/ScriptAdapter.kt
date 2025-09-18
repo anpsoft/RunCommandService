@@ -1,7 +1,7 @@
 package com.yourcompany.yourapp
 
 import android.content.Context
-import android.graphics.BitmapFactory
+import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.view.View
@@ -11,6 +11,7 @@ import android.widget.CheckBox
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import java.io.File
 
@@ -29,6 +30,7 @@ class ScriptAdapter(
         val activeCheckBox: CheckBox = view.findViewWithTag("active_checkbox")
         val shortcutCheckBox: CheckBox = view.findViewWithTag("shortcut_checkbox")
         val testButton: Button = view.findViewWithTag("test_button")
+        val editButton: Button = view.findViewWithTag("edit_button")
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScriptViewHolder {
@@ -68,11 +70,19 @@ class ScriptAdapter(
                     setPadding(4.dp, 4.dp, 4.dp, 4.dp)
                 }
             }
+            val editButton = Button(context).apply {
+                tag = "edit_button"
+                text = "✏️"
+                layoutParams = LinearLayout.LayoutParams(60.dp, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                    setPadding(4.dp, 4.dp, 4.dp, 4.dp)
+                }
+            }
             addView(icon)
             addView(textLayout)
             addView(activeCheckBox)
             addView(shortcutCheckBox)
             addView(testButton)
+            addView(editButton)
         }
         return ScriptViewHolder(view)
     }
@@ -81,6 +91,7 @@ class ScriptAdapter(
         val script = scripts[position]
         val config = IniHelper.getScriptConfig(script.name)
 
+        // Иконка
         val iconFile = File(Environment.getExternalStorageDirectory(), "MyScripts/icons/${config.icon}")
         if (config.icon.isNotEmpty() && iconFile.exists()) {
             holder.icon.setImageURI(Uri.fromFile(iconFile))
@@ -89,8 +100,13 @@ class ScriptAdapter(
         }
         holder.name.text = config.name.ifEmpty { script.name }
         holder.description.text = config.description
+
+        // Проверка реального ярлыка
+        val shortcutFile = File(Environment.getExternalStorageDirectory(), "Desktop/${config.name.ifEmpty { script.name }}.lnk")
+        val shortcutExists = shortcutFile.exists()
+        holder.shortcutCheckBox.isChecked = config.hasShortcut && shortcutExists
+
         holder.activeCheckBox.isChecked = config.isActive
-        holder.shortcutCheckBox.isChecked = config.hasShortcut
         holder.activeCheckBox.visibility = View.VISIBLE
         holder.shortcutCheckBox.visibility = View.VISIBLE
 
@@ -109,10 +125,24 @@ class ScriptAdapter(
                 )
             } else {
                 TermuxHelper.deleteShortcut(context, shortcutName, script.path)
+                // Физическое удаление ярлыка:
+                if (shortcutFile.exists()) shortcutFile.delete()
             }
             IniHelper.updateScriptConfig(script.name, config.copy(hasShortcut = isChecked))
         }
         holder.testButton.setOnClickListener { onTestClick(script) }
+        holder.editButton.setOnClickListener {
+            val scriptFile = File(Environment.getExternalStorageDirectory(), "MyScripts/${script.name}.sh")
+            val intent = Intent(Intent.ACTION_EDIT).apply {
+                setDataAndType(Uri.fromFile(scriptFile), "text/plain")
+            }
+            val chooser = Intent.createChooser(intent, "Открыть редактором")
+            if (chooser.resolveActivity(context.packageManager) != null) {
+                context.startActivity(chooser)
+            } else {
+                Toast.makeText(context, "Нет редактора", Toast.LENGTH_SHORT).show()
+            }
+        }
         holder.view.setOnLongClickListener {
             onSettingsClick(script)
             true
