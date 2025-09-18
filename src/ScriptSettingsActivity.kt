@@ -41,7 +41,12 @@ class ScriptSettingsActivity : Activity() {
             setText(config.description)
         }
         val iconView = ImageView(this).apply {
-            setImageResource(if (config.icon.isNotEmpty()) R.mipmap.ic_no_icon else R.mipmap.ic_no_icon)
+            val iconFile = File(Environment.getExternalStorageDirectory(), "MyScripts/icons/${config.icon}")
+            if (config.icon.isNotEmpty() && iconFile.exists()) {
+                setImageURI(Uri.fromFile(iconFile))
+            } else {
+                setImageResource(getIconResource(config.icon))
+            }
             layoutParams = LinearLayout.LayoutParams(48.dp, 48.dp)
         }
         val iconButton = Button(this).apply {
@@ -121,27 +126,18 @@ class ScriptSettingsActivity : Activity() {
 
         setContentView(layout)
 
-        val saveChanges = {
-            config = config.copy(
-                name = nameEdit.text.toString(),
-                description = descriptionEdit.text.toString(),
-                isActive = activeCheckBox.isChecked
-            )
-            IniHelper.updateScriptConfig(scriptName, config)
-        }
-
         nameEdit.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) { saveChanges() }
+            override fun afterTextChanged(s: Editable?) {}
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
         descriptionEdit.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) { saveChanges() }
+            override fun afterTextChanged(s: Editable?) {}
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
         activeCheckBox.setOnCheckedChangeListener { _, isChecked ->
-            saveChanges()
+            config = config.copy(isActive = isChecked)
         }
     }
 
@@ -163,7 +159,6 @@ class ScriptSettingsActivity : Activity() {
                 IniHelper.updateScriptConfig(scriptName, newConfig)
                 iconView.setImageURI(Uri.fromFile(icons[position]))
                 Toast.makeText(this@ScriptSettingsActivity, "Иконка выбрана", Toast.LENGTH_SHORT).show()
-                finish()
             }
         }
 
@@ -172,6 +167,15 @@ class ScriptSettingsActivity : Activity() {
             .setView(gridView)
             .setNegativeButton("Отмена", null)
             .show()
+    }
+
+    private fun getIconResource(iconName: String): Int {
+        return when (iconName) {
+            "icon.png" -> R.mipmap.icon
+            "Terminal.png" -> R.mipmap.ic_shortcut
+            "no_icon.png" -> R.mipmap.ic_no_icon
+            else -> R.mipmap.ic_no_icon
+        }
     }
 
     private val Int.dp: Int
