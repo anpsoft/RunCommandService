@@ -1,4 +1,4 @@
-name: Build Android App
+name: Build and Send APK
 on: [push, pull_request, workflow_dispatch]
 
 jobs:
@@ -17,6 +17,16 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew assemble${{ env.BUILD_TYPE }}
 
+      - name: Verify APK
+        run: ls -l app/build/outputs/apk/${{ env.BUILD_TYPE }}/
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ env.BUILD_TYPE }}-apk
+          path: app/build/outputs/apk/${{ env.BUILD_TYPE }}/
+          compression-level: 0
+
       - name: Find built APK
         id: find_apk
         run: |
@@ -24,23 +34,11 @@ jobs:
           echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
           echo "apk_name=$(basename "$APK_PATH")" >> $GITHUB_OUTPUT
 
-      - name: Delete old assets from nightly release
+      - name: Send APK to Telegram
         run: |
-          gh release view nightly --json assets -q '.assets[].name' | while read asset; do
-            gh release delete-asset nightly "$asset" -y
-          done
+          echo "Sending APK to Telegram..."
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TLG_TOKEN }}/sendDocument" \
+               -F chat_id="${{ secrets.TLG_CHAT_ID }}" \
+               -F document=@"${{ steps.find_apk.outputs.apk_path }}"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload APK to nightly release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: nightly
-          files: ${{ steps.find_apk.outputs.apk_path }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Print direct APK URL
-        run: |
-          echo "Direct APK URL:"
-          echo "https://github.com/${GITHUB_REPOSITORY}/releases/download/nightly/${{ steps.find_apk.outputs.apk_name }}"
+          TZ: Europe/Kyiv
