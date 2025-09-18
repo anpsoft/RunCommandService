@@ -3,14 +3,14 @@
 # Читаем зависимости из app.ini
 DEPENDENCIES=""
 if [ -f "app.ini" ]; then
-    DEPENDENCIES=$(awk '/\[dependencies\]/ {p=1; next} p && !/^\[/{print "implementation \""$0"\""} p && /^\[/{p=0}' app.ini | grep -v '^$')
+    DEPENDENCIES=$(awk -F'=' '/^\[dependencies\]/ {p=1; next} p && !/^\[/{if($1 ~ /^[a-zA-Z0-9_-]+$/ && NF>=2) print "    implementation \"" $1 ":" $2 "\""} p && /^\[/{p=0}' app.ini | grep -v '^$')
 fi
 
 cat > app/build.gradle << EOF
 plugins {
     id 'com.android.application' version '8.4.0'
     id 'org.jetbrains.kotlin.android' version '1.9.22'
-}
+    }
 
 android {
     namespace '$PACKAGE'
@@ -30,7 +30,7 @@ android {
         }
     }
 
-signingConfigs {
+    signingConfigs {
         debug {
             storeFile file("debug.keystore")
             storePassword "android"
