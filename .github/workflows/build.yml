@@ -4,12 +4,10 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      TZ: Europe/Kyiv
     steps:
       - uses: actions/checkout@v4
-      - name: Set timezone
-        uses: szenius/set-timezone@v1.1
-        with:
-          timezoneLinux: "Europe/Kyiv"
       - name: Initialize project
         run: bash .github/workflows/init-android.sh
       - name: Set up JDK 17
@@ -19,20 +17,17 @@ jobs:
           distribution: 'temurin'
       - name: Build with Gradle
         run: ./gradlew assemble${{ env.BUILD_TYPE || 'debug' }}
-      - name: Verify APK existence
-        run: |
-          ls -l app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/
+      - name: Verify APK
+        run: ls -l app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/
       - name: Fix APK timestamp
         run: |
-          export TZ=Europe/Kyiv
           KYIV_TIME=$(date +%Y%m%d%H%M.%S)
           echo "Kyiv time: $KYIV_TIME"
-          touch -t "$KYIV_TIME" app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/app-${{ env.BUILD_TYPE || 'debug' }}.apk
-          stat -c "File: %n, Time: %y, Size: %s bytes" app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/app-${{ env.BUILD_TYPE || 'debug' }}.apk
+          touch -t "$KYIV_TIME" app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/YourApp5.apk
+          stat -c "File: %n, Time: %y, Size: %s bytes" app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/YourApp5.apk
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-${{ env.BUILD_TYPE || 'debug' }}-apk
-          path: app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/app-${{ env.BUILD_TYPE || 'debug' }}.apk
-          retention-days: 30
-          compression-level: 0  # Отключаем сжатие, чтобы сохранить время и размер
+          path: app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/YourApp5.apk
+          compression-level: 0
