@@ -9,7 +9,7 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.ImageView
-import android.widget.GridView
+import android.widget.LinearLayout
 import android.widget.Toast
 import java.io.File
 
@@ -17,7 +17,6 @@ class ScriptSettingsActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_script_settings)
 
         val scriptName = intent.getStringExtra("script_name")
         if (scriptName == null) {
@@ -26,17 +25,81 @@ class ScriptSettingsActivity : Activity() {
         }
         var config = IniHelper.getScriptConfig(scriptName)
 
-        val nameEdit = findViewById<EditText>(R.id.name_edit)
-        val descriptionEdit = findViewById<EditText>(R.id.description_edit)
-        val iconView = findViewById<ImageView>(R.id.icon_view)
-        val activeCheckBox = findViewById<CheckBox>(R.id.active_checkbox)
-        val renameButton = findViewById<Button>(R.id.rename_button)
-        val deleteButton = findViewById<Button>(R.id.delete_button)
-        val iconButton = findViewById<Button>(R.id.icon_button)
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16.dp, 16.dp, 16.dp, 16.dp)
+        }
 
-        nameEdit.setText(config.name.ifEmpty { scriptName })
-        descriptionEdit.setText(config.description)
-        activeCheckBox.isChecked = config.isActive
+        val nameEdit = EditText(this).apply {
+            hint = "Имя скрипта"
+            setText(config.name.ifEmpty { scriptName })
+        }
+        val descriptionEdit = EditText(this).apply {
+            hint = "Описание"
+            setText(config.description)
+        }
+        val iconView = ImageView(this).apply {
+            setImageResource(if (config.icon.isNotEmpty()) R.mipmap.ic_no_icon else R.mipmap.ic_no_icon)
+            layoutParams = LinearLayout.LayoutParams(48.dp, 48.dp)
+        }
+        val iconButton = Button(this).apply {
+            text = "Выбрать иконку"
+            setOnClickListener { showIconPicker(scriptName, config) }
+        }
+        val activeCheckBox = CheckBox(this).apply {
+            isChecked = config.isActive
+            contentDescription = "Активен"
+        }
+        val renameButton = Button(this).apply {
+            text = "Переименовать"
+            setOnClickListener {
+                val newNameEdit = EditText(this@ScriptSettingsActivity).apply { setText(scriptName) }
+                AlertDialog.Builder(this@ScriptSettingsActivity)
+                    .setTitle("Переименовать скрипт")
+                    .setView(newNameEdit)
+                    .setPositiveButton("ОК") { _, _ ->
+                        val newName = newNameEdit.text.toString()
+                        if (newName != scriptName && newName.isNotEmpty()) {
+                            val oldFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh")
+                            val newFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$newName.sh")
+                            if (oldFile.exists() && !newFile.exists() && oldFile.renameTo(newFile)) {
+                                IniHelper.renameScriptConfig(scriptName, newName, config.copy(name = newName))
+                                Toast.makeText(this@ScriptSettingsActivity, "Скрипт переименован", Toast.LENGTH_SHORT).show()
+                                finish()
+                            } else {
+                                Toast.makeText(this@ScriptSettingsActivity, "Ошибка переименования", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                    .setNegativeButton("Отмена", null)
+                    .show()
+            }
+        }
+        val deleteButton = Button(this).apply {
+            text = "Удалить"
+            setOnClickListener {
+                AlertDialog.Builder(this@ScriptSettingsActivity)
+                    .setTitle("Удалить скрипт")
+                    .setMessage("Уверены?")
+                    .setPositiveButton("Да") { _, _ ->
+                        File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh").delete()
+                        IniHelper.deleteScriptConfig(scriptName)
+                        finish()
+                    }
+                    .setNegativeButton("Нет", null)
+                    .show()
+            }
+        }
+
+        layout.addView(nameEdit)
+        layout.addView(descriptionEdit)
+        layout.addView(iconView)
+        layout.addView(iconButton)
+        layout.addView(activeCheckBox)
+        layout.addView(renameButton)
+        layout.addView(deleteButton)
+
+        setContentView(layout)
 
         val saveChanges = {
             config = config.copy(
@@ -61,46 +124,6 @@ class ScriptSettingsActivity : Activity() {
             config = config.copy(isActive = isChecked)
             IniHelper.updateScriptConfig(scriptName, config)
         }
-
-        iconButton.setOnClickListener {
-            showIconPicker(scriptName, config)
-        }
-
-        renameButton.setOnClickListener {
-            val newNameEdit = EditText(this).apply { setText(scriptName) }
-            AlertDialog.Builder(this)
-                .setTitle("Переименовать скрипт")
-                .setView(newNameEdit)
-                .setPositiveButton("ОК") { _, _ ->
-                    val newName = newNameEdit.text.toString()
-                    if (newName != scriptName && newName.isNotEmpty()) {
-                        val oldFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh")
-                        val newFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$newName.sh")
-                        if (oldFile.exists() && !newFile.exists() && oldFile.renameTo(newFile)) {
-                            IniHelper.renameScriptConfig(scriptName, newName, config.copy(name = newName))
-                            Toast.makeText(this, "Скрипт переименован", Toast.LENGTH_SHORT).show()
-                            finish()
-                        } else {
-                            Toast.makeText(this, "Ошибка переименования", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
-                .setNegativeButton("Отмена", null)
-                .show()
-        }
-
-        deleteButton.setOnClickListener {
-            AlertDialog.Builder(this)
-                .setTitle("Удалить скрипт")
-                .setMessage("Уверены?")
-                .setPositiveButton("Да") { _, _ ->
-                    File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh").delete()
-                    IniHelper.deleteScriptConfig(scriptName)
-                    finish()
-                }
-                .setNegativeButton("Нет", null)
-                .show()
-        }
     }
 
     private fun showIconPicker(scriptName: String, config: ScriptConfig) {
@@ -112,7 +135,7 @@ class ScriptSettingsActivity : Activity() {
             return
         }
 
-        val gridView = GridView(this).apply {
+        val gridView = android.widget.GridView(this).apply {
             numColumns = 3
             adapter = IconAdapter(this@ScriptSettingsActivity, icons.toList())
             setOnItemClickListener { _, _, position, _ ->
@@ -130,4 +153,7 @@ class ScriptSettingsActivity : Activity() {
             .setNegativeButton("Отмена", null)
             .show()
     }
+
+    private val Int.dp: Int
+        get() = (this * resources.displayMetrics.density).toInt()
 }

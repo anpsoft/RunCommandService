@@ -1,12 +1,12 @@
 package com.yourcompany.yourapp
 
 import android.content.Context
-import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import java.io.File
@@ -20,16 +20,57 @@ class ScriptAdapter(
     private val scripts = mutableListOf<Script>()
 
     class ScriptViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
-        val icon: ImageView = view.findViewById(R.id.script_icon)
-        val name: TextView = view.findViewById(R.id.script_name)
-        val description: TextView = view.findViewById(R.id.script_description)
-        val activeCheckBox: CheckBox = view.findViewById(R.id.active_checkbox)
-        val shortcutCheckBox: CheckBox = view.findViewById(R.id.shortcut_checkbox)
-        val testButton: Button = view.findViewById(R.id.test_button)
+        val icon: ImageView = view.findViewWithTag("script_icon")
+        val name: TextView = view.findViewWithTag("script_name")
+        val description: TextView = view.findViewWithTag("script_description")
+        val activeCheckBox: CheckBox = view.findViewWithTag("active_checkbox")
+        val shortcutCheckBox: CheckBox = view.findViewWithTag("shortcut_checkbox")
+        val testButton: Button = view.findViewWithTag("test_button")
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScriptViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.script_item, parent, false)
+        val view = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(8.dp, 8.dp, 8.dp, 8.dp)
+            val icon = ImageView(context).apply {
+                tag = "script_icon"
+                layoutParams = LinearLayout.LayoutParams(48.dp, 48.dp)
+            }
+            val textLayout = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                addView(TextView(context).apply {
+                    tag = "script_name"
+                    textSize = 16f
+                })
+                addView(TextView(context).apply {
+                    tag = "script_description"
+                    textSize = 12f
+                })
+            }
+            val activeCheckBox = CheckBox(context).apply {
+                tag = "active_checkbox"
+                contentDescription = "Активен"
+            }
+            val shortcutCheckBox = CheckBox(context).apply {
+                tag = "shortcut_checkbox"
+                contentDescription = "Ярлык"
+            }
+            val testButton = Button(context).apply {
+                tag = "test_button"
+                text = "▶️"
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                    width = 0
+                    minimumWidth = 0
+                    setPadding(4.dp, 4.dp, 4.dp, 4.dp)
+                }
+            }
+            addView(icon)
+            addView(textLayout)
+            addView(activeCheckBox)
+            addView(shortcutCheckBox)
+            addView(testButton)
+        }
         return ScriptViewHolder(view)
     }
 
@@ -38,11 +79,7 @@ class ScriptAdapter(
         val config = IniHelper.getScriptConfig(script.name)
 
         holder.icon.setImageResource(
-            if (config.icon.isNotEmpty()) {
-                R.mipmap.ic_no_icon // Пока заглушка
-            } else {
-                R.mipmap.ic_no_icon
-            }
+            if (config.icon.isNotEmpty()) R.mipmap.ic_no_icon else R.mipmap.ic_no_icon
         )
         holder.name.text = config.name.ifEmpty { script.name }
         holder.description.text = config.description
@@ -67,7 +104,6 @@ class ScriptAdapter(
             }
             IniHelper.updateScriptConfig(script.name, config.copy(hasShortcut = isChecked))
         }
-        holder.testButton.text = "▶️"
         holder.testButton.setOnClickListener { onTestClick(script) }
         holder.view.setOnLongClickListener {
             onSettingsClick(script)
@@ -82,6 +118,9 @@ class ScriptAdapter(
         scripts.addAll(newScripts)
         notifyDataSetChanged()
     }
+
+    private val Int.dp: Int
+        get() = (this * context.resources.displayMetrics.density).toInt()
 }
 
 data class Script(val name: String, val path: String)
@@ -89,6 +128,6 @@ data class ScriptConfig(
     val name: String = "",
     val description: String = "",
     val icon: String = "",
-    val isActive: Boolean = true,
+    val isActive: Boolean = false,
     val hasShortcut: Boolean = false
 )

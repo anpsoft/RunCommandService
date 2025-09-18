@@ -9,6 +9,7 @@ import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
@@ -73,7 +74,15 @@ class MainActivity : Activity() {
         }
         adapter = ScriptAdapter(this, ::onScriptSettings, ::onTestRun)
         recyclerView.adapter = adapter
-        layout.addView(recyclerView)
+
+        val scrollView = ScrollView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+        scrollView.addView(recyclerView)
+        layout.addView(scrollView)
 
         val bottomButtons = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -140,7 +149,7 @@ class MainActivity : Activity() {
                 if (name.isNotEmpty()) {
                     val scriptFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$name.sh")
                     if (scriptFile.createNewFile()) {
-                        IniHelper.addScriptConfig(name, ScriptConfig(name = name, isActive = true))
+                        IniHelper.addScriptConfig(name, ScriptConfig(name = name, isActive = false))
                         val intent = Intent(Intent.ACTION_EDIT).apply {
                             setDataAndType(Uri.fromFile(scriptFile), "text/plain")
                         }

@@ -8,8 +8,10 @@ jobs:
       TZ: Europe/Kiev
     steps:
       - uses: actions/checkout@v4
-      - name: Set timezone for build
-        run: sudo timedatectl set-timezone Europe/Kiev
+      - name: Set timezone to Europe/Kiev
+        uses: szenius/set-timezone@v1.1
+        with:
+          timezoneLinux: "Europe/Kiev"
       - name: Initialize project
         run: bash .github/workflows/init-android.sh
       - name: Set up JDK 17
@@ -19,8 +21,13 @@ jobs:
           distribution: 'temurin'
       - name: Build with Gradle
         run: ./gradlew assemble${{ env.BUILD_TYPE || 'debug' }}
+      - name: Fix APK timestamp
+        run: |
+          touch -t $(date -d "now" +%Y%m%d%H%M.%S) app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/*.apk
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-${{ env.BUILD_TYPE || 'debug' }}-apk
           path: app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/*.apk
+          
+          
