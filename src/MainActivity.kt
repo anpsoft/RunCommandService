@@ -75,12 +75,14 @@ class MainActivity : Activity() {
         adapter = ScriptAdapter(this, ::onScriptSettings, ::onTestRun)
         recyclerView.adapter = adapter
 
-        val scrollView = ScrollView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT
-            )
-        }
+val scrollView = ScrollView(this).apply {
+    layoutParams = LinearLayout.LayoutParams(
+        LinearLayout.LayoutParams.MATCH_PARENT,
+        0,
+        1f
+    )
+    }
+        
         scrollView.addView(recyclerView)
         layout.addView(scrollView)
 
@@ -175,6 +177,11 @@ class MainActivity : Activity() {
         }
         startActivity(intent)
     }
+
+override fun onStart() {
+    super.onStart()
+    updateScriptList()
+}
 
     private fun onTestRun(script: Script) {
         if (!TermuxHelper.hasPermission(this)) {
