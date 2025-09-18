@@ -1,7 +1,9 @@
+// Блок 1: Импорты
 package com.yourcompany.yourapp
 
 import android.content.Context
 import android.net.Uri
+import android.os.Environment
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
@@ -12,6 +14,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import java.io.File
 
+// Блок 2: Класс и переменные
 class ScriptAdapter(
     private val context: Context,
     private val onSettingsClick: (Script) -> Unit,
@@ -20,6 +23,7 @@ class ScriptAdapter(
 
     private val scripts = mutableListOf<Script>()
 
+    // Блок 3: ViewHolder
     class ScriptViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
         val icon: ImageView = view.findViewWithTag("script_icon")
         val name: TextView = view.findViewWithTag("script_name")
@@ -29,6 +33,7 @@ class ScriptAdapter(
         val testButton: Button = view.findViewWithTag("test_button")
     }
 
+    // Блок 4: onCreateViewHolder
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScriptViewHolder {
         val view = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -55,7 +60,7 @@ class ScriptAdapter(
                 layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
             }
             val shortcutCheckBox = CheckBox(context).apply {
-                tag = "shortcut_checkbox"
+                tag = "shortcut_checkpoint"
                 contentDescription = "Ярлык"
                 layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
             }
@@ -75,6 +80,7 @@ class ScriptAdapter(
         return ScriptViewHolder(view)
     }
 
+    // Блок 5: onBindViewHolder
     override fun onBindViewHolder(holder: ScriptViewHolder, position: Int) {
         val script = scripts[position]
         val config = IniHelper.getScriptConfig(script.name)
@@ -113,12 +119,12 @@ class ScriptAdapter(
                     if (config.icon.isNotEmpty()) {
                         val iconFile = File(Environment.getExternalStorageDirectory(), "MyScripts/icons/${config.icon}")
                         if (iconFile.exists()) {
-                            android.content.Intent.ShortcutIconResource.fromContext(context, context.resources.getIdentifier(config.icon.removeSuffix(".png"), "mipmap", context.packageName))
+                            R.mipmap.ic_no_icon // Заглушка, иконка из /sdcard/MyScripts/icons
                         } else {
-                            android.content.Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_shortcut)
+                            R.mipmap.ic_shortcut
                         }
                     } else {
-                        android.content.Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_shortcut)
+                        R.mipmap.ic_shortcut
                     }
                 )
             } else {
@@ -133,6 +139,7 @@ class ScriptAdapter(
         }
     }
 
+    // Блок 6: Остальные методы
     override fun getItemCount(): Int = scripts.size
 
     fun updateScripts(newScripts: List<Script>) {
@@ -145,6 +152,7 @@ class ScriptAdapter(
         get() = (this * context.resources.displayMetrics.density).toInt()
 }
 
+// Блок 7: Данные
 data class Script(val name: String, val path: String)
 data class ScriptConfig(
     val name: String = "",
