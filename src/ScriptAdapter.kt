@@ -105,7 +105,7 @@ class ScriptAdapter(
                     shortcutName,
                     script.path,
                     "${context.packageName}.ShortcutActivity",
-                    if (config.icon.isNotEmpty() && iconFile.exists()) iconFile.path else null
+                    if (config.icon.isNotEmpty() && iconFile.exists()) iconFile.absolutePath else null
                 )
             } else {
                 TermuxHelper.deleteShortcut(context, shortcutName, script.path)
