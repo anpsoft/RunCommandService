@@ -19,14 +19,20 @@ jobs:
           distribution: 'temurin'
       - name: Build with Gradle
         run: ./gradlew assemble${{ env.BUILD_TYPE || 'debug' }}
+      - name: Verify APK existence
+        run: |
+          ls -l app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/
       - name: Fix APK timestamp
         run: |
           export TZ=Europe/Kyiv
-          echo "Current time: $(date)"
-          touch -d "$(date)" app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/app-${{ env.BUILD_TYPE || 'debug' }}.apk
-          stat -c "File: %n, Time: %y" app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/app-${{ env.BUILD_TYPE || 'debug' }}.apk
+          KYIV_TIME=$(date +%Y%m%d%H%M.%S)
+          echo "Kyiv time: $KYIV_TIME"
+          touch -t "$KYIV_TIME" app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/app-${{ env.BUILD_TYPE || 'debug' }}.apk
+          stat -c "File: %n, Time: %y, Size: %s bytes" app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/app-${{ env.BUILD_TYPE || 'debug' }}.apk
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-${{ env.BUILD_TYPE || 'debug' }}-apk
           path: app/build/outputs/apk/${{ env.BUILD_TYPE || 'debug' }}/app-${{ env.BUILD_TYPE || 'debug' }}.apk
+          retention-days: 30
+          compression-level: 0  # Отключаем сжатие, чтобы сохранить время и размер
