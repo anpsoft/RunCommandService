@@ -62,9 +62,9 @@ class MainActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             addView(TextView(this@MainActivity).apply { text = "Иконка"; width = 48.dp })
             addView(TextView(this@MainActivity).apply { text = "Имя / Описание"; setPadding(8.dp, 0, 0, 0); layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) })
-            addView(TextView(this@MainActivity).apply { text = ""; width = 48.dp })
-            addView(TextView(this@MainActivity).apply { text = ""; width = 48.dp })
-            addView(TextView(this@MainActivity).apply { text = "Тест"; width = 60.dp })
+            addView(TextView(this@MainActivity).apply { text = ""; width = 48.dp }) // Для active
+            addView(TextView(this@MainActivity).apply { text = ""; width = 48.dp }) // Для shortcut
+            addView(TextView(this@MainActivity).apply { text = "▶️"; width = 60.dp }) // Для test
         }
         layout.addView(headerLayout)
 
@@ -80,14 +80,17 @@ class MainActivity : Activity() {
         }
         val refreshButton = Button(this).apply {
             text = "Обновить"
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             setOnClickListener { updateScriptList() }
         }
         val createScriptButton = Button(this).apply {
             text = "Новый"
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             setOnClickListener { createNewScript() }
         }
         val showAllButton = Button(this).apply {
             text = "Все"
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             setOnClickListener {
                 showAllScripts = !showAllScripts
                 text = if (showAllScripts) "Активные" else "Все"
@@ -100,6 +103,11 @@ class MainActivity : Activity() {
         layout.addView(bottomButtons)
 
         setContentView(layout)
+        updateScriptList()
+    }
+
+    override fun onResume() {
+        super.onResume()
         updateScriptList()
     }
 
@@ -131,14 +139,21 @@ class MainActivity : Activity() {
                 val name = editText.text.toString()
                 if (name.isNotEmpty()) {
                     val scriptFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$name.sh")
-                    scriptFile.createNewFile()
-
-                    IniHelper.addScriptConfig(name, ScriptConfig(name = name, isActive = true))
-                    val intent = Intent(Intent.ACTION_EDIT).apply {
-                        setDataAndType(Uri.fromFile(scriptFile), "text/plain")
+                    if (scriptFile.createNewFile()) {
+                        IniHelper.addScriptConfig(name, ScriptConfig(name = name, isActive = true))
+                        val intent = Intent(Intent.ACTION_EDIT).apply {
+                            setDataAndType(Uri.fromFile(scriptFile), "text/plain")
+                        }
+                        val chooser = Intent.createChooser(intent, "Открыть редактором")
+                        if (chooser.resolveActivity(packageManager) != null) {
+                            startActivity(chooser)
+                        } else {
+                            Toast.makeText(this, "Нет редактора", Toast.LENGTH_SHORT).show()
+                        }
+                        updateScriptList()
+                    } else {
+                        Toast.makeText(this, "Файл уже существует", Toast.LENGTH_SHORT).show()
                     }
-                    startActivity(intent)
-                    updateScriptList()
                 }
             }
             .setNegativeButton("Отмена", null)
@@ -152,22 +167,20 @@ class MainActivity : Activity() {
         startActivity(intent)
     }
 
-private fun onTestRun(script: Script) {
-    if (!TermuxHelper.hasPermission(this)) {
-        showPermissionDialog()
-        return
+    private fun onTestRun(script: Script) {
+        if (!TermuxHelper.hasPermission(this)) {
+            showPermissionDialog()
+            return
+        }
+        val file = File(script.path)
+        if (!file.exists()) {
+            Toast.makeText(this, "Скрипт не существует: ${script.path}", Toast.LENGTH_SHORT).show()
+            return
+        }
+        TermuxHelper.startTermuxSilently(this)
+        Thread.sleep(1500)
+        TermuxHelper.sendCommand(this, script.path)
     }
-    val file = File(script.path)
-    if (!file.exists()) {
-        Toast.makeText(this, "Скрипт не существует: ${script.path}", Toast.LENGTH_SHORT).show()
-        return
-    }
-    TermuxHelper.startTermuxSilently(this)
-    Thread.sleep(1500)
-    TermuxHelper.sendCommand(this, script.path)
-}
-
-
 
     private fun showPermissionDialog() {
         AlertDialog.Builder(this)

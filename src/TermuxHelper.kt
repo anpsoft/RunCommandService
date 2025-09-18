@@ -1,12 +1,12 @@
-package com.yourcompany.yourapp3
+package com.yourcompany.yourapp
 
 import android.app.ActivityManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.widget.Toast
 import android.util.Log
+import android.widget.Toast
 
 object TermuxHelper {
     const val TERMUX_PERMISSION = "com.termux.permission.RUN_COMMAND"
@@ -34,42 +34,41 @@ object TermuxHelper {
         }
     }
 
-fun sendCommand(context: Context, scriptPath: String, showToast: Boolean = true) {
-    try {
-        val termuxScriptPath = scriptPath.replace("/sdcard", "/storage/emulated/0")
-        val startShPath = "/data/data/com.termux/files/home/Start.sh"
-        val commandIntent = Intent("com.termux.RUN_COMMAND").apply {
-            setClassName("com.termux", "com.termux.app.RunCommandService")
-            putExtra("com.termux.RUN_COMMAND_PATH", startShPath)
-            putExtra("com.termux.RUN_COMMAND_ARGUMENTS", arrayOf(termuxScriptPath))
-            putExtra("com.termux.RUN_COMMAND_WORKDIR", "/data/data/com.termux/files/home")
-            putExtra("com.termux.RUN_COMMAND_BACKGROUND", false)
-            putExtra("com.termux.RUN_COMMAND_SESSION_ACTION", "0")
-        }
-        context.startService(commandIntent)
+    fun sendCommand(context: Context, scriptPath: String, showToast: Boolean = true) {
+        try {
+            val termuxScriptPath = scriptPath.replace("/sdcard", "/storage/emulated/0")
+            val startShPath = "/data/data/com.termux/files/home/Start.sh"
+            val commandIntent = Intent("com.termux.RUN_COMMAND").apply {
+                setClassName("com.termux", "com.termux.app.RunCommandService")
+                putExtra("com.termux.RUN_COMMAND_PATH", startShPath)
+                putExtra("com.termux.RUN_COMMAND_ARGUMENTS", arrayOf(termuxScriptPath))
+                putExtra("com.termux.RUN_COMMAND_WORKDIR", "/data/data/com.termux/files/home")
+                putExtra("com.termux.RUN_COMMAND_BACKGROUND", false)
+                putExtra("com.termux.RUN_COMMAND_SESSION_ACTION", "0")
+            }
+            context.startService(commandIntent)
 
-        if (showToast) {
-            Toast.makeText(context, "Команда отправлена", Toast.LENGTH_SHORT).show()
-        }
-    } catch (e: Exception) {
-        Log.e("TermuxHelper", "Failed to send command for $scriptPath: ${e.message}")
-        if (showToast) {
-            Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
+            if (showToast) {
+                Toast.makeText(context, "Команда отправлена", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            Log.e("TermuxHelper", "Failed to send command for $scriptPath: ${e.message}")
+            if (showToast) {
+                Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
+            }
         }
     }
-}
-
 
     fun createShortcut(context: Context, name: String, scriptPath: String, activityClass: String, iconResource: Int) {
         try {
             val shortcutIntent = Intent().apply {
-                component = ComponentName(context.packageName, "${context.packageName}.ShortcutActivity")
+                component = ComponentName(context.packageName, activityClass)
                 action = "RUN_SCRIPT"
                 putExtra("script_path", scriptPath)
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
 
-            val uniqueName = name // Уникальное имя ярлыка
+            val uniqueName = name
 
             val addIntent = Intent("com.android.launcher.action.INSTALL_SHORTCUT").apply {
                 putExtra(Intent.EXTRA_SHORTCUT_NAME, uniqueName)
@@ -78,6 +77,7 @@ fun sendCommand(context: Context, scriptPath: String, showToast: Boolean = true)
                     Intent.ShortcutIconResource.fromContext(context, iconResource))
             }
             context.sendBroadcast(addIntent)
+            Toast.makeText(context, "Ярлык создан", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Toast.makeText(context, "Ошибка создания ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
         }
@@ -89,6 +89,7 @@ fun sendCommand(context: Context, scriptPath: String, showToast: Boolean = true)
                 component = ComponentName(context.packageName, "${context.packageName}.ShortcutActivity")
                 action = "RUN_SCRIPT"
                 putExtra("script_path", scriptPath)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
             val removeIntent = Intent("com.android.launcher.action.UNINSTALL_SHORTCUT").apply {
                 putExtra(Intent.EXTRA_SHORTCUT_NAME, name)

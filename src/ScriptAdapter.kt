@@ -39,7 +39,7 @@ class ScriptAdapter(
 
         holder.icon.setImageResource(
             if (config.icon.isNotEmpty()) {
-                R.mipmap.ic_no_icon // Пока заглушка, позже для пользовательских иконок
+                R.mipmap.ic_no_icon // Пока заглушка
             } else {
                 R.mipmap.ic_no_icon
             }
@@ -67,6 +67,7 @@ class ScriptAdapter(
             }
             IniHelper.updateScriptConfig(script.name, config.copy(hasShortcut = isChecked))
         }
+        holder.testButton.text = "▶️"
         holder.testButton.setOnClickListener { onTestClick(script) }
         holder.view.setOnLongClickListener {
             onSettingsClick(script)

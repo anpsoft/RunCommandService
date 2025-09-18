@@ -1,38 +1,38 @@
 package com.yourcompany.yourapp
 
 import android.os.Environment
+import org.ini4j.Ini
 import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.util.Properties
 
 object IniHelper {
     private val iniFile = File(Environment.getExternalStorageDirectory(), "MyScripts/scripts.ini")
-    private val properties = Properties()
+    private val ini = Ini()
 
     init {
         iniFile.parentFile?.mkdirs()
         if (iniFile.exists()) {
-            FileInputStream(iniFile).use { properties.load(it) }
+            ini.load(iniFile)
         }
     }
 
     fun getScriptConfig(scriptName: String): ScriptConfig {
+        val section = ini[scriptName] ?: return ScriptConfig()
         return ScriptConfig(
-            name = properties.getProperty("[$scriptName]name", ""),
-            description = properties.getProperty("[$scriptName]description", ""),
-            icon = properties.getProperty("[$scriptName]icon", ""),
-            isActive = properties.getProperty("[$scriptName]is_active", "true").toBoolean(),
-            hasShortcut = properties.getProperty("[$scriptName]has_shortcut", "false").toBoolean()
+            name = section.get("name", ""),
+            description = section.get("description", ""),
+            icon = section.get("icon", ""),
+            isActive = section.get("is_active", "true").toBoolean(),
+            hasShortcut = section.get("has_shortcut", "false").toBoolean()
         )
     }
 
     fun updateScriptConfig(scriptName: String, config: ScriptConfig) {
-        properties.setProperty("[$scriptName]name", config.name)
-        properties.setProperty("[$scriptName]description", config.description)
-        properties.setProperty("[$scriptName]icon", config.icon)
-        properties.setProperty("[$scriptName]is_active", config.isActive.toString())
-        properties.setProperty("[$scriptName]has_shortcut", config.hasShortcut.toString())
+        val section = ini.add(scriptName)
+        section["name"] = config.name
+        section["description"] = config.description
+        section["icon"] = config.icon
+        section["is_active"] = config.isActive.toString()
+        section["has_shortcut"] = config.hasShortcut.toString()
         save()
     }
 
@@ -41,24 +41,16 @@ object IniHelper {
     }
 
     fun renameScriptConfig(oldName: String, newName: String, config: ScriptConfig) {
-        properties.remove("[$oldName]name")
-        properties.remove("[$oldName]description")
-        properties.remove("[$oldName]icon")
-        properties.remove("[$oldName]is_active")
-        properties.remove("[$oldName]has_shortcut")
+        ini.remove(oldName)
         updateScriptConfig(newName, config)
     }
 
     fun deleteScriptConfig(scriptName: String) {
-        properties.remove("[$scriptName]name")
-        properties.remove("[$scriptName]description")
-        properties.remove("[$scriptName]icon")
-        properties.remove("[$scriptName]is_active")
-        properties.remove("[$scriptName]has_shortcut")
+        ini.remove(scriptName)
         save()
     }
 
     private fun save() {
-        FileOutputStream(iniFile).use { properties.store(it, null) }
+        ini.store(iniFile)
     }
 }

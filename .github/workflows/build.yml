@@ -8,6 +8,8 @@ jobs:
       TZ: Europe/Kiev
     steps:
       - uses: actions/checkout@v4
+      - name: Set timezone for build
+        run: sudo timedatectl set-timezone Europe/Kiev
       - name: Initialize project
         run: bash .github/workflows/init-android.sh
       - name: Set up JDK 17

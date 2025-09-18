@@ -3,6 +3,8 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.os.Environment
+import android.text.Editable
+import android.text.TextWatcher
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
@@ -12,7 +14,7 @@ import android.widget.Toast
 import java.io.File
 
 class ScriptSettingsActivity : Activity() {
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_script_settings)
@@ -22,7 +24,7 @@ class ScriptSettingsActivity : Activity() {
             finish()
             return
         }
-        val config = IniHelper.getScriptConfig(scriptName)
+        var config = IniHelper.getScriptConfig(scriptName)
 
         val nameEdit = findViewById<EditText>(R.id.name_edit)
         val descriptionEdit = findViewById<EditText>(R.id.description_edit)
@@ -36,8 +38,28 @@ class ScriptSettingsActivity : Activity() {
         descriptionEdit.setText(config.description)
         activeCheckBox.isChecked = config.isActive
 
+        val saveChanges = {
+            config = config.copy(
+                name = nameEdit.text.toString(),
+                description = descriptionEdit.text.toString(),
+                isActive = activeCheckBox.isChecked
+            )
+            IniHelper.updateScriptConfig(scriptName, config)
+        }
+
+        nameEdit.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) { saveChanges() }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+        descriptionEdit.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) { saveChanges() }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
         activeCheckBox.setOnCheckedChangeListener { _, isChecked ->
-            IniHelper.updateScriptConfig(scriptName, config.copy(isActive = isChecked))
+            config = config.copy(isActive = isChecked)
+            IniHelper.updateScriptConfig(scriptName, config)
         }
 
         iconButton.setOnClickListener {
@@ -54,9 +76,9 @@ class ScriptSettingsActivity : Activity() {
                     if (newName != scriptName && newName.isNotEmpty()) {
                         val oldFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh")
                         val newFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$newName.sh")
-                        if (oldFile.exists() && !newFile.exists()) {
-                            oldFile.renameTo(newFile)
+                        if (oldFile.exists() && !newFile.exists() && oldFile.renameTo(newFile)) {
                             IniHelper.renameScriptConfig(scriptName, newName, config.copy(name = newName))
+                            Toast.makeText(this, "Скрипт переименован", Toast.LENGTH_SHORT).show()
                             finish()
                         } else {
                             Toast.makeText(this, "Ошибка переименования", Toast.LENGTH_SHORT).show()
@@ -84,7 +106,11 @@ class ScriptSettingsActivity : Activity() {
     private fun showIconPicker(scriptName: String, config: ScriptConfig) {
         val iconsDir = File(Environment.getExternalStorageDirectory(), "MyScripts/icons")
         iconsDir.mkdirs()
-        val icons = iconsDir.listFiles { _, name -> name.endsWith(".png") || name.endsWith(".jpg") } ?: return
+        val icons = iconsDir.listFiles { _, name -> name.endsWith(".png") || name.endsWith(".jpg") } ?: arrayOf()
+        if (icons.isEmpty()) {
+            Toast.makeText(this, "Нет иконок в /sdcard/MyScripts/icons", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         val gridView = GridView(this).apply {
             numColumns = 3
