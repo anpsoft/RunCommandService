@@ -12,6 +12,10 @@ done
 
 
 # Создание директорий
+
+mkdir -p app
+
+[ -d "app" ] || { echo "❌ Не удалось создать папку app/"; exit 1; }
 JAVA_PATH=$(echo "$PACKAGE" | tr '.' '/')
 mkdir -p app/src/main/java/$JAVA_PATH app/src/main/res/{values,layout,mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}}
 
