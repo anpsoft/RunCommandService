@@ -120,19 +120,21 @@ class ScriptAdapter(
         
         holder.shortcutCheckBox.setOnCheckedChangeListener { _, isChecked ->
             val shortcutName = config.name.ifEmpty { script.name }
+            val activityClass = "${context.packageName}.ShortcutActivity" // или твой класс активности
             if (isChecked) {
                 TermuxHelper.createShortcut(
                     context,
                     shortcutName,
                     script.path,
-                    "${context.packageName}.ShortcutActivity",
+                    activityClass,
                     getIconResource(config.icon)
                 )
                 } else {
                 TermuxHelper.deleteShortcut(
                     context,
                     shortcutName,
-                    script.path
+                    script.path,
+                    activityClass
                 )
                 if (shortcutFile.exists()) shortcutFile.delete()
             }

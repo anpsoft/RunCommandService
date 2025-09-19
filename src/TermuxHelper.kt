@@ -59,22 +59,19 @@ object TermuxHelper {
         }
     }
     
-    fun createShortcut(context: Context, name: String, scriptPath: String, activityClass: String, iconResource: Int) {
+    fun createShortcut(context: Context, name: String, scriptPath: String, activityClass: String, iconResId: Int) {
         try {
-            val shortcutIntent = Intent().apply {
-                component = ComponentName(context.packageName, activityClass)
+            val shortcutIntent = Intent(context, Class.forName(activityClass)).apply {
                 action = "RUN_SCRIPT"
                 putExtra("script_path", scriptPath)
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
-            
-            val uniqueName = name
-            
             val addIntent = Intent("com.android.launcher.action.INSTALL_SHORTCUT").apply {
-                putExtra(Intent.EXTRA_SHORTCUT_NAME, uniqueName)
+                putExtra(Intent.EXTRA_SHORTCUT_NAME, name)
                 putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
                 putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
-                Intent.ShortcutIconResource.fromContext(context, iconResource))
+                Intent.ShortcutIconResource.fromContext(context, iconResId))
+                putExtra("duplicate", false)
             }
             context.sendBroadcast(addIntent)
             Toast.makeText(context, "Ярлык создан", Toast.LENGTH_SHORT).show()
@@ -83,10 +80,9 @@ object TermuxHelper {
         }
     }
     
-    fun deleteShortcut(context: Context, name: String, scriptPath: String) {
+    fun deleteShortcut(context: Context, name: String, scriptPath: String, activityClass: String) {
         try {
-            val shortcutIntent = Intent().apply {
-                component = ComponentName(context.packageName, "${context.packageName}.ShortcutActivity")
+            val shortcutIntent = Intent(context, Class.forName(activityClass)).apply {
                 action = "RUN_SCRIPT"
                 putExtra("script_path", scriptPath)
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
