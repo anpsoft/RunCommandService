@@ -8,8 +8,8 @@ EOF
 
 # Вставка include_root (на уровне manifest)
 awk -F'=' '/^\[manifest\]/{f=1; next} /^\[/{f=0} f && /^include_root=/{print $2}' "$INI_FILE" | while read file; do
-    if [ -f "$file" ]; then 
-        cat "$file"
+    if [ -f "../$file" ]; then 
+        cat "../$file"
         echo "✅ Включен в manifest: $file"
     fi
 done >> app/src/main/AndroidManifest.xml
@@ -57,8 +57,8 @@ EOF
 
 # Вставка include_app (внутри application)
 awk -F'=' '/^\[manifest\]/{f=1; next} /^\[/{f=0} f && /^include_app=/{print $2}' "$INI_FILE" | while read file; do
-    if [ -f "$file" ]; then
-        cat "$file" >> app/src/main/AndroidManifest.xml
+    if [ -f "../$file" ]; then
+        cat "../$file" >> app/src/main/AndroidManifest.xml
         echo "✅ Включен в application: $file"
     fi
 done

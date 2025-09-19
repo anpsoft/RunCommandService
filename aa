@@ -1,0 +1,43 @@
+‘âàãªâãà  ¯ ¯®ª
+‘¥à¨©­ë© ­®¬¥à â®¬ : 0000003D B483:D5DC
+C:.
+³   aa
+³   app.ini
+³   README.md
+³   Task
+³   widgets.xml
+³   ­®¢¨© 1.txt
+³   ­®¢¨© 11.txt
+³   
+ÃÄÄÄ.github
+³   ÀÄÄÄworkflows
+³           build.yml
+³           init-android.sh
+³           ­®¢¨© 1.txt
+³           
+ÃÄÄÄicons
+³       icon.png
+³       no_icon.png
+³       Terminal.png
+³       
+ÃÄÄÄscripts
+³       generate-resources.sh
+³       gradle_init.sh
+³       parse-config.sh
+³       setup-project.sh
+³       
+ÃÄÄÄsrc
+³       IconAdapter.kt
+³       IniHelper.kt
+³       MainActivity.kt
+³       ScriptAdapter.kt
+³       ScriptSettingsActivity.kt
+³       ScriptWidget.kt
+³       ShortcutActivity.kt
+³       TermuxHelper.kt
+³       
+ÀÄÄÄtemplates
+    ÃÄÄÄlayout
+    ³       ­®¢¨© 1.txt
+    ³       
+    ÀÄÄÄvalues
