@@ -3,7 +3,7 @@
 # Читаем зависимости из app.ini
 DEPENDENCIES=""
 if [ -f "app.ini" ]; then
-    DEPENDENCIES=$(awk -F'=' '/^\[dependencies\]/ {p=1; next} p && !/^\[/{print "    implementation \"" $2 "\""} p && /^\[/{p=0}' app.ini | grep -v '^$')
+    DEPENDENCIES=$(awk -F'=' '/^\[dependencies\]/ {p=1; next} p && !/^\[/{if ($1=="" || $2 ~ /^[[:space:]]*$/) next; print "    implementation \"" $2 "\""} p && /^\[/{p=0}' app.ini | grep -v '^$')
 fi
 
 cat > app/build.gradle << EOF
