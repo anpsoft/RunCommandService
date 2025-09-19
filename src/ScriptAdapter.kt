@@ -19,10 +19,10 @@ class ScriptAdapter(
     private val context: Context,
     private val onSettingsClick: (Script) -> Unit,
     private val onTestClick: (Script) -> Unit
-) : RecyclerView.Adapter<ScriptAdapter.ScriptViewHolder>() {
-
+    ) : RecyclerView.Adapter<ScriptAdapter.ScriptViewHolder>() {
+    
     private val scripts = mutableListOf<Script>()
-
+    
     class ScriptViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
         val icon: ImageView = view.findViewWithTag("script_icon")
         val name: TextView = view.findViewWithTag("script_name")
@@ -32,7 +32,7 @@ class ScriptAdapter(
         val testButton: Button = view.findViewWithTag("test_button")
         val editButton: Button = view.findViewWithTag("edit_button")
     }
-
+    
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScriptViewHolder {
         val view = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -86,33 +86,38 @@ class ScriptAdapter(
         }
         return ScriptViewHolder(view)
     }
-
+    
     override fun onBindViewHolder(holder: ScriptViewHolder, position: Int) {
         val script = scripts[position]
         val config = IniHelper.getScriptConfig(script.name)
-
+        
         // Иконка
         val iconFile = File(Environment.getExternalStorageDirectory(), "MyScripts/icons/${config.icon}")
         if (config.icon.isNotEmpty() && iconFile.exists()) {
             holder.icon.setImageURI(Uri.fromFile(iconFile))
-        } else {
+            } else {
             holder.icon.setImageResource(getIconResource(config.icon))
         }
         holder.name.text = config.name.ifEmpty { script.name }
         holder.description.text = config.description
-
+        
         // Проверка реального ярлыка
         val shortcutFile = File(Environment.getExternalStorageDirectory(), "Desktop/${config.name.ifEmpty { script.name }}.lnk")
         val shortcutExists = shortcutFile.exists()
         holder.shortcutCheckBox.isChecked = config.hasShortcut && shortcutExists
-
+        
         holder.activeCheckBox.isChecked = config.isActive
         holder.activeCheckBox.visibility = View.VISIBLE
         holder.shortcutCheckBox.visibility = View.VISIBLE
-
+        
         holder.activeCheckBox.setOnCheckedChangeListener { _, isChecked ->
             IniHelper.updateScriptConfig(script.name, config.copy(isActive = isChecked))
         }
+        
+        
+        
+        
+        
         holder.shortcutCheckBox.setOnCheckedChangeListener { _, isChecked ->
             val shortcutName = config.name.ifEmpty { script.name }
             if (isChecked) {
@@ -123,13 +128,20 @@ class ScriptAdapter(
                     "${context.packageName}.ShortcutActivity",
                     getIconResource(config.icon)
                 )
-            } else {
-                TermuxHelper.deleteShortcut(context, shortcutName, script.path)
-                // Физическое удаление ярлыка:
+                } else {
+                TermuxHelper.deleteShortcut(
+                    context,
+                    shortcutName,
+                    script.path
+                )
                 if (shortcutFile.exists()) shortcutFile.delete()
             }
             IniHelper.updateScriptConfig(script.name, config.copy(hasShortcut = isChecked))
         }
+        
+        
+        
+        
         holder.testButton.setOnClickListener { onTestClick(script) }
         holder.editButton.setOnClickListener {
             val scriptFile = File(Environment.getExternalStorageDirectory(), "MyScripts/${script.name}.sh")
@@ -139,7 +151,7 @@ class ScriptAdapter(
             val chooser = Intent.createChooser(intent, "Открыть редактором")
             if (chooser.resolveActivity(context.packageManager) != null) {
                 context.startActivity(chooser)
-            } else {
+                } else {
                 Toast.makeText(context, "Нет редактора", Toast.LENGTH_SHORT).show()
             }
         }
@@ -148,15 +160,15 @@ class ScriptAdapter(
             true
         }
     }
-
+    
     override fun getItemCount(): Int = scripts.size
-
+    
     fun updateScripts(newScripts: List<Script>) {
         scripts.clear()
         scripts.addAll(newScripts)
         notifyDataSetChanged()
     }
-
+    
     private fun getIconResource(iconName: String): Int {
         return when (iconName) {
             "icon.png" -> R.mipmap.ic_launcher
@@ -165,9 +177,9 @@ class ScriptAdapter(
             else -> R.mipmap.ic_no_icon
         }
     }
-
+    
     private val Int.dp: Int
-        get() = (this * context.resources.displayMetrics.density).toInt()
+    get() = (this * context.resources.displayMetrics.density).toInt()
 }
 
 data class Script(val name: String, val path: String)

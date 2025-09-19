@@ -10,17 +10,17 @@ import android.widget.Toast
 
 object TermuxHelper {
     const val TERMUX_PERMISSION = "com.termux.permission.RUN_COMMAND"
-
+    
     fun hasPermission(context: Context): Boolean {
         return context.checkSelfPermission(TERMUX_PERMISSION) == PackageManager.PERMISSION_GRANTED
     }
-
+    
     private fun isTermuxRunning(context: Context): Boolean {
         val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val runningApps = activityManager.runningAppProcesses ?: return false
         return runningApps.any { it.processName == "com.termux" }
     }
-
+    
     fun startTermuxSilently(context: Context) {
         try {
             if (!isTermuxRunning(context)) {
@@ -30,10 +30,10 @@ object TermuxHelper {
                 context.startActivity(intent)
                 Thread.sleep(3000)
             }
-        } catch (_: Exception) {
+            } catch (_: Exception) {
         }
     }
-
+    
     fun sendCommand(context: Context, scriptPath: String, showToast: Boolean = true) {
         try {
             val termuxScriptPath = scriptPath.replace("/sdcard", "/storage/emulated/0")
@@ -47,18 +47,18 @@ object TermuxHelper {
                 putExtra("com.termux.RUN_COMMAND_SESSION_ACTION", "0")
             }
             context.startService(commandIntent)
-
+            
             if (showToast) {
                 Toast.makeText(context, "Команда отправлена", Toast.LENGTH_SHORT).show()
             }
-        } catch (e: Exception) {
+            } catch (e: Exception) {
             Log.e("TermuxHelper", "Failed to send command for $scriptPath: ${e.message}")
             if (showToast) {
                 Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
-
+    
     fun createShortcut(context: Context, name: String, scriptPath: String, activityClass: String, iconResource: Int) {
         try {
             val shortcutIntent = Intent().apply {
@@ -67,22 +67,22 @@ object TermuxHelper {
                 putExtra("script_path", scriptPath)
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
-
+            
             val uniqueName = name
-
+            
             val addIntent = Intent("com.android.launcher.action.INSTALL_SHORTCUT").apply {
                 putExtra(Intent.EXTRA_SHORTCUT_NAME, uniqueName)
                 putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
                 putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
-                    Intent.ShortcutIconResource.fromContext(context, iconResource))
+                Intent.ShortcutIconResource.fromContext(context, iconResource))
             }
             context.sendBroadcast(addIntent)
             Toast.makeText(context, "Ярлык создан", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
+            } catch (e: Exception) {
             Toast.makeText(context, "Ошибка создания ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
-
+    
     fun deleteShortcut(context: Context, name: String, scriptPath: String) {
         try {
             val shortcutIntent = Intent().apply {
@@ -97,8 +97,9 @@ object TermuxHelper {
             }
             context.sendBroadcast(removeIntent)
             Toast.makeText(context, "Ярлык удалён", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
+            } catch (e: Exception) {
             Toast.makeText(context, "Ошибка удаления ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
+    
 }
