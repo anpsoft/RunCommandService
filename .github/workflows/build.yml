@@ -13,6 +13,9 @@ jobs:
 
       - name: Initialize project
         run: bash .github/workflows/init-android.sh
+        
+      - name: Show full build.gradle  
+        run: cat app/build.gradle
 
       - name: Build with Gradle
         run: ./gradlew assemble${{ env.BUILD_TYPE }}
