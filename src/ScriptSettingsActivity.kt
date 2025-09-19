@@ -1,11 +1,11 @@
+package com.yourcompany.yourapp
+
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.text.Editable
-import android.text.TextWatcher
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
@@ -14,24 +14,26 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Toast
 import java.io.File
+import android.content.Context
+import android.appwidget.AppWidgetManager
 
 class ScriptSettingsActivity : Activity() {
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         val scriptName = intent.getStringExtra("script_name")
         if (scriptName == null) {
             finish()
             return
         }
         var config = IniHelper.getScriptConfig(scriptName)
-        
+
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(16.dp, 16.dp, 16.dp, 16.dp)
         }
-        
+
         val nameEdit = EditText(this).apply {
             hint = "Имя скрипта"
             setText(config.name.ifEmpty { scriptName })
@@ -44,7 +46,7 @@ class ScriptSettingsActivity : Activity() {
             val iconFile = File(Environment.getExternalStorageDirectory(), "MyScripts/icons/${config.icon}")
             if (config.icon.isNotEmpty() && iconFile.exists()) {
                 setImageURI(Uri.fromFile(iconFile))
-                } else {
+            } else {
                 setImageResource(R.mipmap.ic_no_icon)
             }
             layoutParams = LinearLayout.LayoutParams(48.dp, 48.dp)
@@ -66,76 +68,51 @@ class ScriptSettingsActivity : Activity() {
             setOnClickListener {
                 val newNameEdit = EditText(this@ScriptSettingsActivity).apply { setText(scriptName) }
                 AlertDialog.Builder(this@ScriptSettingsActivity)
-                .setTitle("Переименовать скрипт")
-                .setView(newNameEdit)
-                .setPositiveButton("Ок") { _, _ ->
-                    val newName = newNameEdit.text.toString()
-                    if (newName.isNotEmpty() && newName != scriptName) {
-                        IniHelper.renameScriptConfig(scriptName, newName, config)
-                        val oldFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh")
-                        val newFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$newName.sh")
-                        if (oldFile.exists()) oldFile.renameTo(newFile)
-                        finish()
+                    .setTitle("Переименовать скрипт")
+                    .setView(newNameEdit)
+                    .setPositiveButton("Ок") { _, _ ->
+                        val newName = newNameEdit.text.toString()
+                        if (newName.isNotEmpty() && newName != scriptName) {
+                            IniHelper.renameScriptConfig(scriptName, newName, config)
+                            val oldFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh")
+                            val newFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$newName.sh")
+                            if (oldFile.exists()) oldFile.renameTo(newFile)
+                            finish()
+                        }
                     }
-                }
-                .setNegativeButton("Отмена", null)
-                .show()
+                    .setNegativeButton("Отмена", null)
+                    .show()
             }
         }
         val deleteButton = Button(this).apply {
             text = "Удалить"
             setOnClickListener {
                 AlertDialog.Builder(this@ScriptSettingsActivity)
-                .setMessage("Уверены?")
-                .setPositiveButton("Да") { _, _ ->
-                    File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh").delete()
-                    IniHelper.deleteScriptConfig(scriptName)
-                    finish()
-                }
-                .setNegativeButton("Нет", null)
-                .show()
+                    .setMessage("Уверены?")
+                    .setPositiveButton("Да") { _, _ ->
+                        File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh").delete()
+                        IniHelper.deleteScriptConfig(scriptName)
+                        finish()
+                    }
+                    .setNegativeButton("Нет", null)
+                    .show()
             }
         }
-        
-        
+
         val convertButton = Button(this).apply {
             text = "→ Иконка"
             setOnClickListener {
                 AlertDialog.Builder(this@ScriptSettingsActivity)
-                .setTitle("Заменить на иконку")
-                .setMessage("Виджет будет заменен на постоянную иконку.\n\n⚠️ Иконку нельзя будет удалить программно!")
-                .setPositiveButton("Заменить") { _, _ ->
-                    convertToIcon(scriptName, config)
-                }
-                .setNegativeButton("Отмена", null)
-                .show()
+                    .setTitle("Заменить на иконку")
+                    .setMessage("Виджет будет заменен на постоянную иконку.\n\n⚠️ Иконку нельзя будет удалить программно!")
+                    .setPositiveButton("Заменить") { _, _ ->
+                        convertToIcon(scriptName, config)
+                    }
+                    .setNegativeButton("Отмена", null)
+                    .show()
             }
         }
-        
-        layout.addView(convertButton)
-        
-        private fun convertToIcon(scriptName: String, config: ScriptConfig) {
-            // Удали виджет
-            val prefs = getSharedPreferences("widgets", Context.MODE_PRIVATE)
-            val widgetId = prefs.getInt("script_$scriptName", -1)
-            if (widgetId != -1) {
-                val appWidgetManager = AppWidgetManager.getInstance(this)
-                appWidgetManager.deleteAppWidgetId(widgetId)
-            }
-            
-            // Создай иконку
-            TermuxHelper.createShortcut(
-                this,
-                config.name.ifEmpty { scriptName },
-                "MyScripts/$scriptName.sh",
-                "${packageName}.ShortcutActivity",
-                R.mipmap.ic_launcher
-            )
-            
-            Toast.makeText(this, "Виджет заменен на иконку", Toast.LENGTH_LONG).show()
-            finish()
-        }
-        
+
         val saveButton = Button(this).apply {
             text = "Сохранить"
             setOnClickListener {
@@ -153,7 +130,7 @@ class ScriptSettingsActivity : Activity() {
             text = "Отмена"
             setOnClickListener { finish() }
         }
-        
+
         layout.addView(nameEdit)
         layout.addView(descriptionEdit)
         layout.addView(iconView)
@@ -161,12 +138,41 @@ class ScriptSettingsActivity : Activity() {
         layout.addView(activeCheckBox)
         layout.addView(renameButton)
         layout.addView(deleteButton)
+        layout.addView(convertButton)
         layout.addView(saveButton)
         layout.addView(cancelButton)
-        
+
         setContentView(layout)
     }
-    
+
+    fun convertToIcon(scriptName: String, config: ScriptConfig) {
+        // Удали виджет
+        val prefs = getSharedPreferences("widgets", Context.MODE_PRIVATE)
+        val widgetId = prefs.getInt("script_$scriptName", -1)
+        if (widgetId != -1) {
+            val appWidgetManager = AppWidgetManager.getInstance(this)
+            // AppWidgetManager не имеет метода deleteAppWidgetId, поэтому просто очищаем данные
+            prefs.edit()
+                .remove("path_$widgetId")
+                .remove("name_$widgetId")
+                .remove("icon_$widgetId")
+                .remove("script_$scriptName")
+                .apply()
+        }
+
+        // Создай иконку
+        TermuxHelper.createShortcut(
+            this,
+            config.name.ifEmpty { scriptName },
+            "MyScripts/$scriptName.sh",
+            "${packageName}.ShortcutActivity",
+            R.mipmap.ic_launcher
+        )
+
+        Toast.makeText(this, "Виджет заменен на иконку", Toast.LENGTH_LONG).show()
+        finish()
+    }
+
     private fun showIconPicker(scriptName: String, config: ScriptConfig, iconView: ImageView) {
         val iconsDir = File(Environment.getExternalStorageDirectory(), "MyScripts/icons")
         iconsDir.mkdirs()
@@ -175,7 +181,7 @@ class ScriptSettingsActivity : Activity() {
             Toast.makeText(this, "Нет иконок в /sdcard/MyScripts/icons", Toast.LENGTH_SHORT).show()
             return
         }
-        
+
         val gridView = GridView(this).apply {
             numColumns = 3
             adapter = IconAdapter(this@ScriptSettingsActivity, icons.toList())
@@ -188,14 +194,14 @@ class ScriptSettingsActivity : Activity() {
                 finish()
             }
         }
-        
+
         AlertDialog.Builder(this)
-        .setTitle("Выберите иконку")
-        .setView(gridView)
-        .setNegativeButton("Отмена", null)
-        .show()
+            .setTitle("Выберите иконку")
+            .setView(gridView)
+            .setNegativeButton("Отмена", null)
+            .show()
     }
-    
+
     private val Int.dp: Int
-    get() = (this * resources.displayMetrics.density).toInt()
+        get() = (this * resources.displayMetrics.density).toInt()
 }
