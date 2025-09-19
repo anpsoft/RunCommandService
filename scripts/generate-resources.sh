@@ -4,6 +4,17 @@ cat << EOF > app/src/main/AndroidManifest.xml
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="$PACKAGE">
+EOF
+
+# Вставка include_root (на уровне manifest)
+awk -F'=' '/^\[manifest\]/{f=1; next} /^\[/{f=0} f && /^include_root=/{print $2}' "$INI_FILE" | while read file; do
+    if [ -f "$file" ]; then 
+        cat "$file"
+        echo "✅ Включен в manifest: $file"
+    fi
+done >> app/src/main/AndroidManifest.xml
+
+cat << EOF >> app/src/main/AndroidManifest.xml
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT"/>
@@ -42,15 +53,21 @@ cat << EOF > app/src/main/AndroidManifest.xml
             android:exported="false"
             android:enabled="$SILENT_ENABLED"
             android:theme="@android:style/Theme.NoDisplay" />
+EOF
+
+# Вставка include_app (внутри application)
+awk -F'=' '/^\[manifest\]/{f=1; next} /^\[/{f=0} f && /^include_app=/{print $2}' "$INI_FILE" | while read file; do
+    if [ -f "$file" ]; then
+        cat "$file" >> app/src/main/AndroidManifest.xml
+        echo "✅ Включен в application: $file"
+    fi
+done
+
+cat << EOF >> app/src/main/AndroidManifest.xml
     </application>
 </manifest>
 EOF
-# Копирование XML из templates/layout/
-if [ -d "templates/layout" ]; then
-    for xml_file in $(find templates/layout -name "*.xml"); do
-    xml_name=$(basename "$xml_file")
-        cp "$xml_file" "app/src/main/res/layout/$xml_name"
-        echo "✅ Копирован: $xml_name в layout"
-    done
-fi
+
+
+
 echo "✅ Ресурсы сгенерированы"

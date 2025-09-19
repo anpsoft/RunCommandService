@@ -117,33 +117,49 @@ class ScriptAdapter(
         
         
         
+holder.shortcutCheckBox.setOnCheckedChangeListener { _, isChecked ->
+    if (isChecked) {
+        createWidget(context, script, config)
+    } else {
+        removeWidget(context, script)
+    }
+    IniHelper.updateScriptConfig(script.name, config.copy(hasShortcut = isChecked))
+}
+
+private fun createWidget(context: Context, script: Script, config: ScriptConfig) {
+    val appWidgetManager = AppWidgetManager.getInstance(context)
+    val provider = ComponentName(context, ScriptWidget::class.java)
+    
+    if (appWidgetManager.isRequestPinAppWidgetSupported) {
+        // Генерируем уникальный ID
+        val widgetId = System.currentTimeMillis().toInt()
         
-        holder.shortcutCheckBox.setOnCheckedChangeListener { _, isChecked ->
-            val shortcutName = config.name.ifEmpty { script.name }
-            val activityClass = "${context.packageName}.ShortcutActivity" // или твой класс активности
-            if (isChecked) {
-                TermuxHelper.createShortcut(
-                    context,
-                    shortcutName,
-                    script.path,
-                    activityClass,
-                    getIconResource(config.icon)
-                )
-                } else {
-                TermuxHelper.deleteShortcut(
-                    context,
-                    shortcutName,
-                    script.path,
-                    activityClass
-                )
-                if (shortcutFile.exists()) shortcutFile.delete()
-            }
-            IniHelper.updateScriptConfig(script.name, config.copy(hasShortcut = isChecked))
-        }
+        // Сохраняем данные виджета
+        val prefs = context.getSharedPreferences("widgets", Context.MODE_PRIVATE)
+        prefs.edit()
+            .putString("path_$widgetId", script.path)
+            .putString("name_$widgetId", config.name.ifEmpty { script.name })
+            .putString("icon_$widgetId", config.icon)
+            .putInt("script_${script.name}", widgetId)
+            .apply()
         
-        
-        
-        
+        appWidgetManager.requestPinAppWidget(provider, null, null)
+        Toast.makeText(context, "Виджет создан", Toast.LENGTH_SHORT).show()
+    }
+}
+private fun removeWidget(context: Context, script: Script) {
+    val prefs = context.getSharedPreferences("widgets", Context.MODE_PRIVATE)
+    val widgetId = prefs.getInt("script_${script.name}", -1)
+    
+    if (widgetId != -1) {
+        prefs.edit()
+            .remove("path_$widgetId")
+            .remove("name_$widgetId") 
+            .remove("script_${script.name}")
+            .apply()
+        Toast.makeText(context, "Данные виджета удалены", Toast.LENGTH_SHORT).show()
+    }
+}        
         holder.testButton.setOnClickListener { onTestClick(script) }
         holder.editButton.setOnClickListener {
             val scriptFile = File(Environment.getExternalStorageDirectory(), "MyScripts/${script.name}.sh")
