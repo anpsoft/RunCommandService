@@ -45,7 +45,7 @@ class ScriptSettingsActivity : Activity() {
             if (config.icon.isNotEmpty() && iconFile.exists()) {
                 setImageURI(Uri.fromFile(iconFile))
             } else {
-                setImageResource(R.mipmap.ic_no_icon)
+                setImageResource(ShortcutManager.getIconResource(config.icon))
             }
             layoutParams = LinearLayout.LayoutParams(48.dp, 48.dp)
         }
@@ -97,31 +97,25 @@ class ScriptSettingsActivity : Activity() {
                     .show()
             }
         }
-        
-        
-        
-val saveButton = Button(this).apply {
-    text = "Сохранить"
-    setOnClickListener {
-        val oldConfig = config
-        val newConfig = config.copy(
-            name = nameEdit.text.toString(),
-            description = descriptionEdit.text.toString(),
-            isActive = activeCheckBox.isChecked
-        )
-        
-        // ПРОВЕРЯЕМ ИЗМЕНЕНИЯ ЯРЛЫКА
-        if (oldConfig.hasShortcut && (oldConfig.name != newConfig.name || oldConfig.icon != newConfig.icon)) {
-            showShortcutUpdateDialog(scriptName, oldConfig, newConfig)
-        } else {
-            IniHelper.updateScriptConfig(scriptName, newConfig)
-            Toast.makeText(this@ScriptSettingsActivity, "Сохранено", Toast.LENGTH_SHORT).show()
-            finish()
+        val saveButton = Button(this).apply {
+            text = "Сохранить"
+            setOnClickListener {
+                val oldConfig = config
+                val newConfig = config.copy(
+                    name = nameEdit.text.toString(),
+                    description = descriptionEdit.text.toString(),
+                    isActive = activeCheckBox.isChecked
+                )
+                
+                if (oldConfig.hasShortcut && (oldConfig.name != newConfig.name || oldConfig.icon != newConfig.icon)) {
+                    showShortcutUpdateDialog(scriptName, oldConfig, newConfig)
+                } else {
+                    IniHelper.updateScriptConfig(scriptName, newConfig)
+                    Toast.makeText(this@ScriptSettingsActivity, "Сохранено", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+            }
         }
-    }
-}        
-        
-        
         val cancelButton = Button(this).apply {
             text = "Отмена"
             setOnClickListener { finish() }
@@ -154,39 +148,6 @@ val saveButton = Button(this).apply {
         }
     }
 
-
-private fun showShortcutUpdateDialog(scriptName: String, oldConfig: ScriptConfig, newConfig: ScriptConfig) {
-    AlertDialog.Builder(this)
-        .setTitle("Обновить ярлык?")
-        .setMessage("Имя или иконка изменились. Нужно пересоздать ярлык:\n\n" +
-                   "Старый: '${oldConfig.name}'\n" + 
-                   "Новый: '${newConfig.name}'")
-        .setPositiveButton("Да, обновить") { _, _ ->
-            // Удаляем старый
-            val scriptPath = File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh").absolutePath
-            TermuxHelper.deleteShortcut(this, oldConfig.name.ifEmpty { scriptName }, scriptPath)
-            
-            // Создаем новый
-            TermuxHelper.createShortcut(
-                this,
-                newConfig.name.ifEmpty { scriptName },
-                scriptPath,
-                "${packageName}.ShortcutActivity",
-                getIconResource(newConfig.icon)
-            )
-            
-            IniHelper.updateScriptConfig(scriptName, newConfig.copy(hasShortcut = true))
-            Toast.makeText(this, "Ярлык обновлен", Toast.LENGTH_SHORT).show()
-            finish()
-        }
-        .setNegativeButton("Нет, только настройки") { _, _ ->
-            IniHelper.updateScriptConfig(scriptName, newConfig)
-            Toast.makeText(this, "Сохранено без обновления ярлыка", Toast.LENGTH_SHORT).show()
-            finish()
-        }
-        .show()
-}
-
     private fun showIconPicker(scriptName: String, config: ScriptConfig, iconView: ImageView) {
         val iconsDir = File(Environment.getExternalStorageDirectory(), "MyScripts/icons")
         iconsDir.mkdirs()
@@ -213,6 +174,27 @@ private fun showShortcutUpdateDialog(scriptName: String, oldConfig: ScriptConfig
             .setTitle("Выберите иконку")
             .setView(gridView)
             .setNegativeButton("Отмена", null)
+            .show()
+    }
+
+    private fun showShortcutUpdateDialog(scriptName: String, oldConfig: ScriptConfig, newConfig: ScriptConfig) {
+        AlertDialog.Builder(this)
+            .setTitle("Обновить ярлык?")
+            .setMessage("Имя или иконка изменились. Нужно пересоздать ярлык:\n\n" +
+                       "Старый: '${oldConfig.name}'\n" + 
+                       "Новый: '${newConfig.name}'")
+            .setPositiveButton("Да, обновить") { _, _ ->
+                val scriptPath = File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh").absolutePath
+                ShortcutManager.recreateShortcut(this, scriptName, scriptPath, oldConfig, newConfig)
+                IniHelper.updateScriptConfig(scriptName, newConfig)
+                Toast.makeText(this, "Ярлык будет обновлен", Toast.LENGTH_SHORT).show()
+                finish()
+            }
+            .setNegativeButton("Нет, только настройки") { _, _ ->
+                IniHelper.updateScriptConfig(scriptName, newConfig)
+                Toast.makeText(this, "Сохранено без обновления ярлыка", Toast.LENGTH_SHORT).show()
+                finish()
+            }
             .show()
     }
 
