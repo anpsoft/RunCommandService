@@ -77,47 +77,113 @@ class ScriptAdapter(
         return ScriptViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: ScriptViewHolder, position: Int) {
-        val script = scripts[position]
-        val config = IniHelper.getScriptConfig(script.name)
-
-        val iconFile = File(Environment.getExternalStorageDirectory(), "MyScripts/icons/${config.icon}")
-        if (config.icon.isNotEmpty() && iconFile.exists()) {
-            holder.icon.setImageURI(Uri.fromFile(iconFile))
-        } else {
-            holder.icon.setImageResource(getIconResource(config.icon))
-        }
-        holder.name.text = config.name.ifEmpty { script.name }
-        holder.description.text = config.description
-        holder.activeCheckBox.isChecked = config.isActive
-        holder.shortcutCheckBox.isChecked = config.hasShortcut
-        holder.activeCheckBox.visibility = View.VISIBLE
-        holder.shortcutCheckBox.visibility = View.VISIBLE
-
-        holder.activeCheckBox.setOnCheckedChangeListener { _, isChecked ->
-            IniHelper.updateScriptConfig(script.name, config.copy(isActive = isChecked))
-        }
-        holder.shortcutCheckBox.setOnCheckedChangeListener { _, isChecked ->
-            val shortcutName = config.name.ifEmpty { script.name }
-            if (isChecked) {
-                TermuxHelper.createShortcut(
-                    context,
-                    shortcutName,
-                    script.path,
-                    "${context.packageName}.ShortcutActivity",
-                    getIconResource(config.icon)
-                )
-            } else {
-                TermuxHelper.deleteShortcut(context, shortcutName, script.path)
-            }
-            IniHelper.updateScriptConfig(script.name, config.copy(hasShortcut = isChecked))
-        }
-        holder.testButton.setOnClickListener { onTestClick(script) }
-        holder.view.setOnLongClickListener {
-            onSettingsClick(script)
-            true
-        }
+override fun onBindViewHolder(holder: ScriptViewHolder, position: Int) {
+    val script = scripts[position]
+    val config = IniHelper.getScriptConfig(script.name)
+    
+    // Иконка
+    val iconFile = File(Environment.getExternalStorageDirectory(), "MyScripts/icons/${config.icon}")
+    if (config.icon.isNotEmpty() && iconFile.exists()) {
+        holder.icon.setImageURI(Uri.fromFile(iconFile))
+    } else {
+        holder.icon.setImageResource(getIconResource(config.icon))
     }
+    
+    holder.name.text = config.name.ifEmpty { script.name }
+    holder.description.text = config.description
+    
+    // Убираем принудительное показывание - пусть будут по умолчанию видны
+    // holder.activeCheckBox.visibility = View.VISIBLE  // УБРАТЬ
+    // holder.shortcutCheckBox.visibility = View.VISIBLE // УБРАТЬ
+    
+    // Сначала убираем слушателей чтобы избежать ложных срабатываний
+    holder.activeCheckBox.setOnCheckedChangeListener(null)
+    holder.shortcutCheckBox.setOnCheckedChangeListener(null)
+    
+    // Потом устанавливаем значения
+    holder.activeCheckBox.isChecked = config.isActive
+    holder.shortcutCheckBox.isChecked = config.hasShortcut
+    
+    // Теперь добавляем слушателей
+    holder.activeCheckBox.setOnCheckedChangeListener { _, isChecked ->
+        IniHelper.updateScriptConfig(script.name, config.copy(isActive = isChecked))
+    }
+    
+    holder.shortcutCheckBox.setOnCheckedChangeListener { _, isChecked ->
+        handleShortcutToggle(script, config, isChecked, holder)
+    }
+    
+    holder.testButton.setOnClickListener { onTestClick(script) }
+    holder.view.setOnLongClickListener {
+        onSettingsClick(script)
+        true
+    }
+}
+
+
+
+// Новый метод для обработки переключения ярлыка
+private fun handleShortcutToggle(script: Script, config: ScriptConfig, isChecked: Boolean, holder: ScriptViewHolder) {
+    val shortcutName = config.name.ifEmpty { script.name }
+    
+    if (isChecked) {
+        // Создание ярлыка
+        TermuxHelper.createShortcut(
+            context,
+            shortcutName,
+            script.path,
+            "${context.packageName}.ShortcutActivity",
+            getIconResource(config.icon)
+        )
+        IniHelper.updateScriptConfig(script.name, config.copy(hasShortcut = true))
+    } else {
+        // Удаление ярлыка - запускаем процесс с проверкой
+        requestShortcutRemoval(script, config, holder)
+    }
+}
+
+// Метод для запроса удаления ярлыка с проверкой
+private fun requestShortcutRemoval(script: Script, config: ScriptConfig, holder: ScriptViewHolder) {
+    val shortcutName = config.name.ifEmpty { script.name }
+    
+    // Отправляем команду удаления
+    TermuxHelper.deleteShortcut(context, shortcutName, script.path)
+    
+    // Ждем немного и проверяем
+    android.os.Handler().postDelayed({
+        checkShortcutRemoval(script, config, holder, shortcutName)
+    }, 1000)
+}
+
+// Проверка удаления ярлыка (заглушка - реальная проверка зависит от системы)
+private fun checkShortcutRemoval(script: Script, config: ScriptConfig, holder: ScriptViewHolder, shortcutName: String) {
+    // ЗДЕСЬ ДОЛЖНА БЫТЬ РЕАЛЬНАЯ ПРОВЕРКА СУЩЕСТВОВАНИЯ ЯРЛЫКА
+    // Пока что просто обновляем состояние
+    IniHelper.updateScriptConfig(script.name, config.copy(hasShortcut = false))
+    
+    // Альтернативно - показать диалог с инструкцией
+    showShortcutRemovalInstructions(script, config, holder, shortcutName)
+}
+
+// Диалог с инструкциями по удалению
+private fun showShortcutRemovalInstructions(script: Script, config: ScriptConfig, holder: ScriptViewHolder, shortcutName: String) {
+    android.app.AlertDialog.Builder(context)
+        .setTitle("Удаление ярлыка")
+        .setMessage("Пожалуйста, удалите ярлык '$shortcutName' с рабочего стола вручную:\n\n1. Найдите ярлык на рабочем столе\n2. Долго нажмите на него\n3. Выберите 'Удалить' или перетащите в корзину")
+        .setPositiveButton("Удалил") { _, _ ->
+            // Пользователь говорит что удалил - обновляем статус
+            IniHelper.updateScriptConfig(script.name, config.copy(hasShortcut = false))
+            // TODO: здесь можно добавить реальную проверку и переспросить если ярлык еще есть
+        }
+        .setNegativeButton("Отмена") { _, _ ->
+            // Возвращаем чекбокс обратно
+            holder.shortcutCheckBox.isChecked = true
+        }
+        .show()
+}
+
+
+
 
     override fun getItemCount(): Int = scripts.size
 
