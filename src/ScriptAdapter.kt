@@ -31,52 +31,59 @@ class ScriptAdapter(
         val testButton: Button = view.findViewWithTag("test_button")
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScriptViewHolder {
-        val view = LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(8.dp, 8.dp, 8.dp, 8.dp)
-            val icon = ImageView(context).apply {
-                tag = "script_icon"
-                layoutParams = LinearLayout.LayoutParams(48.dp, 48.dp)
-            }
-            val textLayout = LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                addView(TextView(context).apply {
-                    tag = "script_name"
-                    textSize = 16f
-                })
-                addView(TextView(context).apply {
-                    tag = "script_description"
-                    textSize = 12f
-                })
-            }
-            val activeCheckBox = CheckBox(context).apply {
-                tag = "active_checkbox"
-                contentDescription = "Активен"
-                layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
-            }
-            val shortcutCheckBox = CheckBox(context).apply {
-                tag = "shortcut_checkbox"
-                contentDescription = "Ярлык"
-                layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
-            }
-            val testButton = Button(context).apply {
-                tag = "test_button"
-                text = "▶️"
-                layoutParams = LinearLayout.LayoutParams(60.dp, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                    setPadding(4.dp, 4.dp, 4.dp, 4.dp)
-                }
-            }
-            addView(icon)
-            addView(textLayout)
-            addView(activeCheckBox)
-            addView(shortcutCheckBox)
-            addView(testButton)
+override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScriptViewHolder {
+    val view = LinearLayout(context).apply {
+        orientation = LinearLayout.HORIZONTAL
+        setPadding(8.dp, 8.dp, 8.dp, 8.dp)
+        
+        // ФИКСИРОВАННЫЕ РАЗМЕРЫ КОЛОНОК
+        val icon = ImageView(context).apply {
+            tag = "script_icon"
+            layoutParams = LinearLayout.LayoutParams(48.dp, 48.dp) // ФИКС
         }
-        return ScriptViewHolder(view)
+        
+        val textLayout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(200.dp, LinearLayout.LayoutParams.WRAP_CONTENT) // ФИКС
+            addView(TextView(context).apply {
+                tag = "script_name"
+                textSize = 16f
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            })
+            addView(TextView(context).apply {
+                tag = "script_description" 
+                textSize = 12f
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            })
+        }
+        
+        val activeCheckBox = CheckBox(context).apply {
+            tag = "active_checkbox"
+            layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT) // ФИКС
+        }
+        
+        val shortcutCheckBox = CheckBox(context).apply {
+            tag = "shortcut_checkbox" 
+            layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT) // ФИКС
+        }
+        
+        val testButton = Button(context).apply {
+            tag = "test_button"
+            text = "▶️"
+            layoutParams = LinearLayout.LayoutParams(60.dp, LinearLayout.LayoutParams.WRAP_CONTENT) // ФИКС
+            textSize = 12f
+        }
+        
+        addView(icon)
+        addView(textLayout) 
+        addView(activeCheckBox)
+        addView(shortcutCheckBox)
+        addView(testButton)
     }
-
+    return ScriptViewHolder(view)
+}
 override fun onBindViewHolder(holder: ScriptViewHolder, position: Int) {
     val script = scripts[position]
     val config = IniHelper.getScriptConfig(script.name)
