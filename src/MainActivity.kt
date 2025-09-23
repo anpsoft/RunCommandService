@@ -43,10 +43,12 @@ class MainActivity : Activity() {
                     "UpdateWDS", 
                     "/sdcard/MyScripts/UpdateWDS.sh",
                     "${packageName}.ShortcutActivity",
-                    R.drawable.terminal
+                    R.drawable.ic_shortcut
                 )
             }
         }
+        
+        
 
         val runCommandButton = Button(this).apply {
             text = "Отправить команду"
