@@ -45,7 +45,7 @@ class ScriptAdapter(
             
             val textLayout = LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
-                layoutParams = LinearLayout.LayoutParams(200.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                 setPadding(8.dp, 0, 8.dp, 0)
                 
                 addView(TextView(context).apply {
