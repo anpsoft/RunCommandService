@@ -1,4 +1,4 @@
-package com.yourcompany.yourapp
+package com.yourcompany.yourapp5
 
 import android.app.Activity
 import android.app.AlertDialog
@@ -7,19 +7,14 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.util.Log
 import android.view.Gravity
 import android.view.View
-import android.view.ViewGroup
-
-
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -37,7 +32,7 @@ class MainActivity : Activity() {
 
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(32, 32, 32, 32)
+            setPadding(16, 16, 16, 16)
         }
 
         val createShortcutButton = Button(this).apply {
@@ -48,7 +43,7 @@ class MainActivity : Activity() {
                     "UpdateWDS", 
                     "/sdcard/MyScripts/UpdateWDS.sh",
                     "${packageName}.ShortcutActivity",
-                    R.mipmap.ic_shortcut
+                    R.drawable.ic_shortcut
                 )
             }
         }
@@ -67,73 +62,52 @@ class MainActivity : Activity() {
         layout.addView(createShortcutButton)
         layout.addView(runCommandButton)
 
-        val headerLayout = ConstraintLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            setPadding(8.dp, 8.dp, 8.dp, 8.dp)
+        val headerLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(4, 4, 4, 4)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
         }
 
         val headerIcon = TextView(this).apply {
-            id = View.generateViewId()
             text = "Иконка"
-            layoutParams = ConstraintLayout.LayoutParams(48.dp, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                startToStart = ConstraintLayout.LayoutParams.PARENT_ID
-                topToTop = ConstraintLayout.LayoutParams.PARENT_ID
-                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
-            }
+            layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
             gravity = Gravity.CENTER
-            setBackgroundColor(0xFFF0F0F0.toInt()) // Для отладки
+            minWidth = 48.dp
+            setBackgroundColor(0xFFF0F0F0.toInt())
         }
 
         val headerText = TextView(this).apply {
-            id = View.generateViewId()
             text = "Имя / Описание"
-            layoutParams = ConstraintLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                startToEnd = headerIcon.id
-                endToStart = headerActive.id
-                topToTop = ConstraintLayout.LayoutParams.PARENT_ID
-                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
-                marginStart = 8.dp
-                marginEnd = 8.dp
-            }
-            setBackgroundColor(0xFFF0F0F0.toInt()) // Для отладки
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            setPadding(4, 0, 4, 0)
+            setBackgroundColor(0xFFF0F0F0.toInt())
         }
 
         val headerActive = TextView(this).apply {
-            id = View.generateViewId()
             text = "A"
-            layoutParams = ConstraintLayout.LayoutParams(48.dp, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                startToEnd = headerText.id
-                endToStart = headerShortcut.id
-                topToTop = ConstraintLayout.LayoutParams.PARENT_ID
-                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
-            }
+            layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
             gravity = Gravity.CENTER
-            setBackgroundColor(0xFFF0F0F0.toInt()) // Для отладки
+            minWidth = 48.dp
+            setBackgroundColor(0xFFF0F0F0.toInt())
         }
 
         val headerShortcut = TextView(this).apply {
-            id = View.generateViewId()
             text = "S"
-            layoutParams = ConstraintLayout.LayoutParams(48.dp, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                startToEnd = headerActive.id
-                endToStart = headerTest.id
-                topToTop = ConstraintLayout.LayoutParams.PARENT_ID
-                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
-            }
+            layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
             gravity = Gravity.CENTER
-            setBackgroundColor(0xFFF0F0F0.toInt()) // Для отладки
+            minWidth = 48.dp
+            setBackgroundColor(0xFFF0F0F0.toInt())
         }
 
         val headerTest = TextView(this).apply {
-            id = View.generateViewId()
             text = "▶️"
-            layoutParams = ConstraintLayout.LayoutParams(60.dp, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
-                topToTop = ConstraintLayout.LayoutParams.PARENT_ID
-                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
-            }
+            layoutParams = LinearLayout.LayoutParams(60.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
             gravity = Gravity.CENTER
-            setBackgroundColor(0xFFF0F0F0.toInt()) // Для отладки
+            minWidth = 60.dp
+            setBackgroundColor(0xFFF0F0F0.toInt())
         }
 
         headerLayout.addView(headerIcon)

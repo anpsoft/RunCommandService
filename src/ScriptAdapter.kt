@@ -1,15 +1,11 @@
-package com.yourcompany.yourapp
+package com.yourcompany.yourapp5
 
 import android.content.Context
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Environment
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-
-import android.view.Gravity
-import android.widget.TableLayout
-import android.widget.TableRow
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.ImageView
@@ -35,105 +31,79 @@ class ScriptAdapter(
         val testButton: Button = view.findViewWithTag("test_button")
     }
 
-
-
-override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScriptViewHolder {
-    val view = ConstraintLayout(context).apply {
-        setPadding(8.dp, 8.dp, 8.dp, 8.dp)
-        layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-    }
-
-    val icon = ImageView(context).apply {
-        id = View.generateViewId()
-        tag = "script_icon"
-        layoutParams = ConstraintLayout.LayoutParams(48.dp, 48.dp).apply {
-            startToStart = ConstraintLayout.LayoutParams.PARENT_ID
-            topToTop = ConstraintLayout.LayoutParams.PARENT_ID
-            bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScriptViewHolder {
+        val view = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(4, 4, 4, 4)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
         }
-        scaleType = ImageView.ScaleType.CENTER_CROP
-        setBackgroundColor(0xFFF0F0F0.toInt()) // Для отладки видимости
-    }
 
-    val textLayout = LinearLayout(context).apply {
-        id = View.generateViewId()
-        orientation = LinearLayout.VERTICAL
-        layoutParams = ConstraintLayout.LayoutParams(0, WRAP_CONTENT).apply {
-            startToEnd = icon.id
-            endToStart = activeCheckBox.id
-            topToTop = ConstraintLayout.LayoutParams.PARENT_ID
-            bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
-            marginStart = 8.dp
-            marginEnd = 8.dp
+        val icon = ImageView(context).apply {
+            tag = "script_icon"
+            layoutParams = LinearLayout.LayoutParams(48.dp, 48.dp)
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            minWidth = 48.dp
+            setBackgroundColor(0xFFF0F0F0.toInt())
         }
-        setPadding(8.dp, 0, 8.dp, 0)
 
-        addView(TextView(context).apply {
-            tag = "script_name"
-            textSize = 16f
-            maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            setTypeface(null, android.graphics.Typeface.BOLD)
-        })
-        addView(TextView(context).apply {
-            tag = "script_description"
+        val textLayout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            setPadding(4, 0, 4, 0)
+
+            addView(TextView(context).apply {
+                tag = "script_name"
+                textSize = 16f
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setTypeface(null, android.graphics.Typeface.BOLD)
+            })
+            addView(TextView(context).apply {
+                tag = "script_description"
+                textSize = 12f
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setTextColor(0xFF666666.toInt())
+            })
+        }
+
+        val activeCheckBox = CheckBox(context).apply {
+            tag = "active_checkbox"
+            contentDescription = "Активен"
+            layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
+            minWidth = 48.dp
+            setBackgroundColor(0xFFF0F0F0.toInt())
+        }
+
+        val shortcutCheckBox = CheckBox(context).apply {
+            tag = "shortcut_checkbox"
+            contentDescription = "Ярлык"
+            layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
+            minWidth = 48.dp
+            setBackgroundColor(0xFFF0F0F0.toInt())
+        }
+
+        val testButton = Button(context).apply {
+            tag = "test_button"
+            text = "▶️"
+            layoutParams = LinearLayout.LayoutParams(60.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
             textSize = 12f
-            maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            setTextColor(0xFF666666.toInt())
-        })
-    }
-
-    val activeCheckBox = CheckBox(context).apply {
-        id = View.generateViewId()
-        tag = "active_checkbox"
-        contentDescription = "Активен"
-        layoutParams = ConstraintLayout.LayoutParams(48.dp, WRAP_CONTENT).apply {
-            startToEnd = textLayout.id
-            endToStart = shortcutCheckBox.id
-            topToTop = ConstraintLayout.LayoutParams.PARENT_ID
-            bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+            minWidth = 60.dp
+            visibility = View.VISIBLE
+            setBackgroundColor(0xFFF0F0F0.toInt())
         }
-        setBackgroundColor(0xFFF0F0F0.toInt()) // Для отладки
+
+        view.addView(icon)
+        view.addView(textLayout)
+        view.addView(activeCheckBox)
+        view.addView(shortcutCheckBox)
+        view.addView(testButton)
+
+        return ScriptViewHolder(view)
     }
-
-    val shortcutCheckBox = CheckBox(context).apply {
-        id = View.generateViewId()
-        tag = "shortcut_checkbox"
-        contentDescription = "Ярлык"
-        layoutParams = ConstraintLayout.LayoutParams(48.dp, WRAP_CONTENT).apply {
-            startToEnd = activeCheckBox.id
-            endToStart = testButton.id
-            topToTop = ConstraintLayout.LayoutParams.PARENT_ID
-            bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
-        }
-        setBackgroundColor(0xFFF0F0F0.toInt()) // Для отладки
-    }
-
-    val testButton = Button(context).apply {
-        id = View.generateViewId()
-        tag = "test_button"
-        text = "▶️"
-        layoutParams = ConstraintLayout.LayoutParams(60.dp, WRAP_CONTENT).apply {
-            endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
-            topToTop = ConstraintLayout.LayoutParams.PARENT_ID
-            bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
-        }
-        textSize = 12f
-        visibility = View.VISIBLE
-        setBackgroundColor(0xFFF0F0F0.toInt()) // Для отладки
-    }
-
-    view.addView(icon)
-    view.addView(textLayout)
-    view.addView(activeCheckBox)
-    view.addView(shortcutCheckBox)
-    view.addView(testButton)
-
-    return ScriptViewHolder(view)
-}
-
-
 
     override fun onBindViewHolder(holder: ScriptViewHolder, position: Int) {
         val script = scripts[position]
@@ -149,15 +119,12 @@ override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScriptViewHol
         holder.name.text = config.name.ifEmpty { script.name }
         holder.description.text = config.description
         
-        // Сначала убираем слушателей чтобы избежать ложных срабатываний
         holder.activeCheckBox.setOnCheckedChangeListener(null)
         holder.shortcutCheckBox.setOnCheckedChangeListener(null)
         
-        // Потом устанавливаем значения
         holder.activeCheckBox.isChecked = config.isActive
         holder.shortcutCheckBox.isChecked = config.hasShortcut
         
-        // Теперь добавляем слушателей
         holder.activeCheckBox.setOnCheckedChangeListener { _, isChecked ->
             IniHelper.updateScriptConfig(script.name, config.copy(isActive = isChecked))
         }
