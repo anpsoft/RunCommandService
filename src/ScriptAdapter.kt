@@ -38,78 +38,98 @@ class ScriptAdapter(
 
 
 override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScriptViewHolder {
-    val view = TableLayout(context).apply {
+    val view = ConstraintLayout(context).apply {
         setPadding(8.dp, 8.dp, 8.dp, 8.dp)
-        isStretchAllColumns = false  // Отключаем растяжение всех столбцов
+        layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
     }
 
-    val row = TableRow(context).apply {
-        layoutParams = TableLayout.LayoutParams(
-            TableLayout.LayoutParams.MATCH_PARENT,
-            TableLayout.LayoutParams.WRAP_CONTENT
-        )
-
-        val icon = ImageView(context).apply {
-            tag = "script_icon"
-            layoutParams = TableRow.LayoutParams(48.dp, 48.dp)
-            scaleType = ImageView.ScaleType.CENTER_CROP
-            gravity = Gravity.CENTER
+    val icon = ImageView(context).apply {
+        id = View.generateViewId()
+        tag = "script_icon"
+        layoutParams = ConstraintLayout.LayoutParams(48.dp, 48.dp).apply {
+            startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+            topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+            bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
         }
+        scaleType = ImageView.ScaleType.CENTER_CROP
+        setBackgroundColor(0xFFF0F0F0.toInt()) // Для отладки видимости
+    }
 
-        val textLayout = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT).apply {
-                weight = 1f  // Только эта колонка растягивается
-            }
-            setPadding(8.dp, 0, 8.dp, 0)
-
-            addView(TextView(context).apply {
-                tag = "script_name"
-                textSize = 16f
-                maxLines = 1
-                ellipsize = android.text.TextUtils.TruncateAt.END
-                setTypeface(null, android.graphics.Typeface.BOLD)
-            })
-            addView(TextView(context).apply {
-                tag = "script_description"
-                textSize = 12f
-                maxLines = 1
-                ellipsize = android.text.TextUtils.TruncateAt.END
-                setTextColor(0xFF666666.toInt())
-            })
+    val textLayout = LinearLayout(context).apply {
+        id = View.generateViewId()
+        orientation = LinearLayout.VERTICAL
+        layoutParams = ConstraintLayout.LayoutParams(0, WRAP_CONTENT).apply {
+            startToEnd = icon.id
+            endToStart = activeCheckBox.id
+            topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+            bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+            marginStart = 8.dp
+            marginEnd = 8.dp
         }
+        setPadding(8.dp, 0, 8.dp, 0)
 
-        val activeCheckBox = CheckBox(context).apply {
-            tag = "active_checkbox"
-            contentDescription = "Активен"
-            layoutParams = TableRow.LayoutParams(48.dp, TableRow.LayoutParams.WRAP_CONTENT)
-            gravity = Gravity.CENTER
-        }
-
-        val shortcutCheckBox = CheckBox(context).apply {
-            tag = "shortcut_checkbox"
-            contentDescription = "Ярлык"
-            layoutParams = TableRow.LayoutParams(48.dp, TableRow.LayoutParams.WRAP_CONTENT)
-            gravity = Gravity.CENTER
-        }
-
-        val testButton = Button(context).apply {
-            tag = "test_button"
-            text = "▶️"
-            layoutParams = TableRow.LayoutParams(60.dp, TableRow.LayoutParams.WRAP_CONTENT)
+        addView(TextView(context).apply {
+            tag = "script_name"
+            textSize = 16f
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        })
+        addView(TextView(context).apply {
+            tag = "script_description"
             textSize = 12f
-            gravity = Gravity.CENTER
-            visibility = View.VISIBLE
-        }
-
-        addView(icon)              // Фиксированная, слева
-        addView(textLayout)        // Растягивается
-        addView(activeCheckBox)    // Фиксированная, справа
-        addView(shortcutCheckBox)  // Фиксированная, справа
-        addView(testButton)        // Фиксированная, справа
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            setTextColor(0xFF666666.toInt())
+        })
     }
 
-    view.addView(row)
+    val activeCheckBox = CheckBox(context).apply {
+        id = View.generateViewId()
+        tag = "active_checkbox"
+        contentDescription = "Активен"
+        layoutParams = ConstraintLayout.LayoutParams(48.dp, WRAP_CONTENT).apply {
+            startToEnd = textLayout.id
+            endToStart = shortcutCheckBox.id
+            topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+            bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+        }
+        setBackgroundColor(0xFFF0F0F0.toInt()) // Для отладки
+    }
+
+    val shortcutCheckBox = CheckBox(context).apply {
+        id = View.generateViewId()
+        tag = "shortcut_checkbox"
+        contentDescription = "Ярлык"
+        layoutParams = ConstraintLayout.LayoutParams(48.dp, WRAP_CONTENT).apply {
+            startToEnd = activeCheckBox.id
+            endToStart = testButton.id
+            topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+            bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+        }
+        setBackgroundColor(0xFFF0F0F0.toInt()) // Для отладки
+    }
+
+    val testButton = Button(context).apply {
+        id = View.generateViewId()
+        tag = "test_button"
+        text = "▶️"
+        layoutParams = ConstraintLayout.LayoutParams(60.dp, WRAP_CONTENT).apply {
+            endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+            bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+        }
+        textSize = 12f
+        visibility = View.VISIBLE
+        setBackgroundColor(0xFFF0F0F0.toInt()) // Для отладки
+    }
+
+    view.addView(icon)
+    view.addView(textLayout)
+    view.addView(activeCheckBox)
+    view.addView(shortcutCheckBox)
+    view.addView(testButton)
+
     return ScriptViewHolder(view)
 }
 

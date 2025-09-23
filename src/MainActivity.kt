@@ -1,3 +1,5 @@
+package com.yourcompany.yourapp
+
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
@@ -6,16 +8,18 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.util.Log
-
 import android.view.Gravity
-import android.widget.TableLayout
-import android.widget.TableRow
+import android.view.View
+import android.view.ViewGroup
+
+
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -63,41 +67,81 @@ class MainActivity : Activity() {
         layout.addView(createShortcutButton)
         layout.addView(runCommandButton)
 
-val headerLayout = TableLayout(this).apply {
-    isStretchAllColumns = false  // Отключаем растяжение всех столбцов
-    val row = TableRow(this@MainActivity).apply {
-        addView(TextView(this@MainActivity).apply {
+        val headerLayout = ConstraintLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setPadding(8.dp, 8.dp, 8.dp, 8.dp)
+        }
+
+        val headerIcon = TextView(this).apply {
+            id = View.generateViewId()
             text = "Иконка"
-            layoutParams = TableRow.LayoutParams(48.dp, TableRow.LayoutParams.WRAP_CONTENT)
-            gravity = Gravity.CENTER
-        })
-        addView(TextView(this@MainActivity).apply {
-            text = "Имя / Описание"
-            setPadding(8.dp, 0, 8.dp, 0)
-            layoutParams = TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT).apply {
-                weight = 1f  // Только эта колонка растягивается
+            layoutParams = ConstraintLayout.LayoutParams(48.dp, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
             }
-        })
-        addView(TextView(this@MainActivity).apply {
+            gravity = Gravity.CENTER
+            setBackgroundColor(0xFFF0F0F0.toInt()) // Для отладки
+        }
+
+        val headerText = TextView(this).apply {
+            id = View.generateViewId()
+            text = "Имя / Описание"
+            layoutParams = ConstraintLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                startToEnd = headerIcon.id
+                endToStart = headerActive.id
+                topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+                marginStart = 8.dp
+                marginEnd = 8.dp
+            }
+            setBackgroundColor(0xFFF0F0F0.toInt()) // Для отладки
+        }
+
+        val headerActive = TextView(this).apply {
+            id = View.generateViewId()
             text = "A"
-            layoutParams = TableRow.LayoutParams(48.dp, TableRow.LayoutParams.WRAP_CONTENT)
+            layoutParams = ConstraintLayout.LayoutParams(48.dp, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                startToEnd = headerText.id
+                endToStart = headerShortcut.id
+                topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+            }
             gravity = Gravity.CENTER
-        })
-        addView(TextView(this@MainActivity).apply {
+            setBackgroundColor(0xFFF0F0F0.toInt()) // Для отладки
+        }
+
+        val headerShortcut = TextView(this).apply {
+            id = View.generateViewId()
             text = "S"
-            layoutParams = TableRow.LayoutParams(48.dp, TableRow.LayoutParams.WRAP_CONTENT)
+            layoutParams = ConstraintLayout.LayoutParams(48.dp, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                startToEnd = headerActive.id
+                endToStart = headerTest.id
+                topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+            }
             gravity = Gravity.CENTER
-        })
-        addView(TextView(this@MainActivity).apply {
+            setBackgroundColor(0xFFF0F0F0.toInt()) // Для отладки
+        }
+
+        val headerTest = TextView(this).apply {
+            id = View.generateViewId()
             text = "▶️"
-            layoutParams = TableRow.LayoutParams(60.dp, TableRow.LayoutParams.WRAP_CONTENT)
+            layoutParams = ConstraintLayout.LayoutParams(60.dp, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+                topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+            }
             gravity = Gravity.CENTER
-        })
-    }
-    addView(row)
-}
-layout.addView(headerLayout)
-        
+            setBackgroundColor(0xFFF0F0F0.toInt()) // Для отладки
+        }
+
+        headerLayout.addView(headerIcon)
+        headerLayout.addView(headerText)
+        headerLayout.addView(headerActive)
+        headerLayout.addView(headerShortcut)
+        headerLayout.addView(headerTest)
+        layout.addView(headerLayout)
 
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
@@ -105,13 +149,13 @@ layout.addView(headerLayout)
         adapter = ScriptAdapter(this, ::onScriptSettings, ::onTestRun)
         recyclerView.adapter = adapter
 
-val scrollView = ScrollView(this).apply {
-    layoutParams = LinearLayout.LayoutParams(
-        LinearLayout.LayoutParams.MATCH_PARENT,
-        0,
-        1f
-    )
-    }
+        val scrollView = ScrollView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+        }
         
         scrollView.addView(recyclerView)
         layout.addView(scrollView)
@@ -162,16 +206,14 @@ val scrollView = ScrollView(this).apply {
         ActivityCompat.requestPermissions(this, permissions, 1)
     }
 
-private fun updateScriptList() {
-    val scriptsDir = File(Environment.getExternalStorageDirectory(), "MyScripts")
-    scriptsDir.mkdirs()
-    val scripts = scriptsDir.listFiles { _, name -> name.endsWith(".sh") }?.map { file ->
-        // ИСПРАВЛЯЕМ ПУТЬ - ИСПОЛЬЗУЕМ /sdcard/ КАК В КНОПКАХ
-        Script(file.nameWithoutExtension, "/sdcard/MyScripts/${file.name}")
-    }?.filter { showAllScripts || IniHelper.getScriptConfig(it.name).isActive } ?: emptyList()
-    adapter.updateScripts(scripts)
-}
-
+    private fun updateScriptList() {
+        val scriptsDir = File(Environment.getExternalStorageDirectory(), "MyScripts")
+        scriptsDir.mkdirs()
+        val scripts = scriptsDir.listFiles { _, name -> name.endsWith(".sh") }?.map { file ->
+            Script(file.nameWithoutExtension, "/sdcard/MyScripts/${file.name}")
+        }?.filter { showAllScripts || IniHelper.getScriptConfig(it.name).isActive } ?: emptyList()
+        adapter.updateScripts(scripts)
+    }
 
     private fun createNewScript() {
         val editText = EditText(this).apply { hint = "Имя скрипта" }
@@ -210,10 +252,10 @@ private fun updateScriptList() {
         startActivity(intent)
     }
 
-override fun onStart() {
-    super.onStart()
-    updateScriptList()
-}
+    override fun onStart() {
+        super.onStart()
+        updateScriptList()
+    }
 
     private fun onTestRun(script: Script) {
         if (!TermuxHelper.hasPermission(this)) {
