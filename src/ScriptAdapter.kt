@@ -1,7 +1,7 @@
 package com.yourcompany.yourapp
 
+import android.app.AlertDialog
 import android.content.Context
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Environment
 import android.view.View
@@ -36,7 +36,7 @@ class ScriptAdapter(
             orientation = LinearLayout.HORIZONTAL
             setPadding(8.dp, 8.dp, 8.dp, 8.dp)
             
-            // ФИКСИРОВАННЫЕ РАЗМЕРЫ КОЛОНОК
+            // ФИКСИРОВАННЫЕ РАЗМЕРЫ КОЛОНОК - СООТВЕТСТВУЮТ ШАПКЕ
             val icon = ImageView(context).apply {
                 tag = "script_icon"
                 layoutParams = LinearLayout.LayoutParams(48.dp, 48.dp)
@@ -45,7 +45,7 @@ class ScriptAdapter(
             
             val textLayout = LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
-                layoutParams = LinearLayout.LayoutParams(200.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) // КАК В ШАПКЕ
                 setPadding(8.dp, 0, 8.dp, 0)
                 
                 addView(TextView(context).apply {
@@ -106,7 +106,7 @@ class ScriptAdapter(
         holder.name.text = config.name.ifEmpty { script.name }
         holder.description.text = config.description
         
-        // Сначала убираем слушателей чтобы избежать ложных срабатываний
+        // Сначала убираем слушателей
         holder.activeCheckBox.setOnCheckedChangeListener(null)
         holder.shortcutCheckBox.setOnCheckedChangeListener(null)
         
@@ -134,8 +134,21 @@ class ScriptAdapter(
         if (isChecked) {
             ShortcutManager.createShortcut(context, script.name, script.path, config.icon)
         } else {
-            ShortcutManager.deleteShortcut(context, script.name, script.path)
+            showRemovalDialog(script, config, holder)
         }
+    }
+    
+    private fun showRemovalDialog(script: Script, config: ScriptConfig, holder: ScriptViewHolder) {
+        AlertDialog.Builder(context)
+            .setTitle("Удалить ярлык")
+            .setMessage("Удалить ярлык '${config.name.ifEmpty { script.name }}'?")
+            .setPositiveButton("Да") { _, _ ->
+                ShortcutManager.deleteShortcut(context, script.name, script.path)
+            }
+            .setNegativeButton("Отмена") { _, _ ->
+                holder.shortcutCheckBox.isChecked = true
+            }
+            .show()
     }
 
     override fun getItemCount(): Int = scripts.size
@@ -144,6 +157,9 @@ class ScriptAdapter(
         scripts.clear()
         scripts.addAll(newScripts)
         notifyDataSetChanged()
+        
+        // Синхронизация при первом запуске
+        ShortcutManager.syncShortcutStates(context, newScripts)
     }
 
     private val Int.dp: Int
@@ -155,6 +171,6 @@ data class ScriptConfig(
     val name: String = "",
     val description: String = "",
     val icon: String = "",
-    val isActive: Boolean = false,
+    val isActive: Boolean = true, // ИЗМЕНЕНО НА true ПО УМОЛЧАНИЮ
     val hasShortcut: Boolean = false
 )
