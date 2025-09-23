@@ -49,30 +49,29 @@ object ShortcutManager {
     }
     
 fun deleteShortcut(context: Context, scriptName: String, scriptPath: String) {
-    try {
-        val config = IniHelper.getScriptConfig(scriptName)
-        val displayName = config.name.ifEmpty { scriptName }
-        
-        // ТОЧНО такой же Intent как в createShortcut
-        val shortcutIntent = Intent().apply {
-            component = ComponentName(context.packageName, "${context.packageName}.ShortcutActivity")
-            action = "RUN_SCRIPT"
-            putExtra("script_path", scriptPath)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        
-        val removeIntent = Intent("com.android.launcher.action.UNINSTALL_SHORTCUT").apply {
-            putExtra(Intent.EXTRA_SHORTCUT_NAME, displayName)
-            putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
-        }
-        
-        context.sendBroadcast(removeIntent)
-        IniHelper.updateScriptConfig(scriptName, config.copy(hasShortcut = false))
-        
-        Toast.makeText(context, "Команда удаления отправлена", Toast.LENGTH_SHORT).show()
-    } catch (e: Exception) {
-        Toast.makeText(context, "Ошибка удаления: ${e.message}", Toast.LENGTH_LONG).show()
+    val config = IniHelper.getScriptConfig(scriptName)
+    val displayName = config.name.ifEmpty { scriptName }
+    
+    // Показываем что пытаемся удалить
+    Toast.makeText(context, "Удаляем ярлык: '$displayName'", Toast.LENGTH_LONG).show()
+    
+    val shortcutIntent = Intent().apply {
+        component = ComponentName(context.packageName, "${context.packageName}.ShortcutActivity")
+        action = "RUN_SCRIPT"
+        putExtra("script_path", scriptPath)
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
     }
+    
+    val removeIntent = Intent("com.android.launcher.action.UNINSTALL_SHORTCUT").apply {
+        putExtra(Intent.EXTRA_SHORTCUT_NAME, displayName)
+        putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
+    }
+    
+    context.sendBroadcast(removeIntent)
+    IniHelper.updateScriptConfig(scriptName, config.copy(hasShortcut = false))
+    
+    // Подтверждение что команда отправлена
+    Toast.makeText(context, "Команда удаления отправлена в систему", Toast.LENGTH_SHORT).show()
 }
 
 
