@@ -43,9 +43,10 @@ class ScriptAdapter(
 
         val icon = ImageView(context).apply {
             tag = "script_icon"
-            layoutParams = LinearLayout.LayoutParams(48.dp, 48.dp)
+            layoutParams = LinearLayout.LayoutParams(48.dp, 48.dp).apply {
+                width = 48.dp
+            }
             scaleType = ImageView.ScaleType.CENTER_CROP
-            minWidth = 48.dp
             setBackgroundColor(0xFFF0F0F0.toInt())
         }
 
@@ -73,25 +74,28 @@ class ScriptAdapter(
         val activeCheckBox = CheckBox(context).apply {
             tag = "active_checkbox"
             contentDescription = "Активен"
-            layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
-            minWidth = 48.dp
+            layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                width = 48.dp
+            }
             setBackgroundColor(0xFFF0F0F0.toInt())
         }
 
         val shortcutCheckBox = CheckBox(context).apply {
             tag = "shortcut_checkbox"
             contentDescription = "Ярлык"
-            layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
-            minWidth = 48.dp
+            layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                width = 48.dp
+            }
             setBackgroundColor(0xFFF0F0F0.toInt())
         }
 
         val testButton = Button(context).apply {
             tag = "test_button"
             text = "▶️"
-            layoutParams = LinearLayout.LayoutParams(60.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
+            layoutParams = LinearLayout.LayoutParams(60.dp, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                width = 60.dp
+            }
             textSize = 12f
-            minWidth = 60.dp
             visibility = View.VISIBLE
             setBackgroundColor(0xFFF0F0F0.toInt())
         }

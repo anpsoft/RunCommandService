@@ -43,7 +43,7 @@ class MainActivity : Activity() {
                     "UpdateWDS", 
                     "/sdcard/MyScripts/UpdateWDS.sh",
                     "${packageName}.ShortcutActivity",
-                    R.drawable.ic_shortcut
+                    R.drawable.terminal
                 )
             }
         }
@@ -73,9 +73,10 @@ class MainActivity : Activity() {
 
         val headerIcon = TextView(this).apply {
             text = "Иконка"
-            layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
+            layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                width = 48.dp
+            }
             gravity = Gravity.CENTER
-            minWidth = 48.dp
             setBackgroundColor(0xFFF0F0F0.toInt())
         }
 
@@ -88,25 +89,28 @@ class MainActivity : Activity() {
 
         val headerActive = TextView(this).apply {
             text = "A"
-            layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
+            layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                width = 48.dp
+            }
             gravity = Gravity.CENTER
-            minWidth = 48.dp
             setBackgroundColor(0xFFF0F0F0.toInt())
         }
 
         val headerShortcut = TextView(this).apply {
             text = "S"
-            layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
+            layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                width = 48.dp
+            }
             gravity = Gravity.CENTER
-            minWidth = 48.dp
             setBackgroundColor(0xFFF0F0F0.toInt())
         }
 
         val headerTest = TextView(this).apply {
             text = "▶️"
-            layoutParams = LinearLayout.LayoutParams(60.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
+            layoutParams = LinearLayout.LayoutParams(60.dp, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                width = 60.dp
+            }
             gravity = Gravity.CENTER
-            minWidth = 60.dp
             setBackgroundColor(0xFFF0F0F0.toInt())
         }
 
