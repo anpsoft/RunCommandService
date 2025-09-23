@@ -7,7 +7,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.util.Log
 
-
+import android.view.Gravity
 import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.Button
@@ -65,38 +65,39 @@ class MainActivity : Activity() {
 
 val headerLayout = TableLayout(this).apply {
     isStretchAllColumns = false
+    stretchColumns = "1"  // Только вторая колонка растягивается
     val row = TableRow(this@MainActivity).apply {
         addView(TextView(this@MainActivity).apply {
             text = "Иконка"
             layoutParams = TableRow.LayoutParams(48.dp, TableRow.LayoutParams.WRAP_CONTENT)
-            gravity = android.view.Gravity.CENTER
+            gravity = Gravity.CENTER
         })
         addView(TextView(this@MainActivity).apply {
             text = "Имя / Описание"
             setPadding(8.dp, 0, 8.dp, 0)
             layoutParams = TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT).apply {
-                weight = 1f
+                weight = 1f  // Растягивается под экран
             }
         })
         addView(TextView(this@MainActivity).apply {
             text = "A"
             layoutParams = TableRow.LayoutParams(48.dp, TableRow.LayoutParams.WRAP_CONTENT)
-            gravity = android.view.Gravity.CENTER
+            gravity = Gravity.CENTER
         })
         addView(TextView(this@MainActivity).apply {
             text = "S"
             layoutParams = TableRow.LayoutParams(48.dp, TableRow.LayoutParams.WRAP_CONTENT)
-            gravity = android.view.Gravity.CENTER
+            gravity = Gravity.CENTER
         })
         addView(TextView(this@MainActivity).apply {
             text = "▶️"
             layoutParams = TableRow.LayoutParams(60.dp, TableRow.LayoutParams.WRAP_CONTENT)
-            gravity = android.view.Gravity.CENTER
+            gravity = Gravity.CENTER
         })
     }
     addView(row)
 }
-layout.addView(headerLayout)        
+layout.addView(headerLayout)   
         
 
         recyclerView = RecyclerView(this).apply {

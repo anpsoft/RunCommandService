@@ -7,6 +7,7 @@ import android.os.Environment
 import android.view.View
 import android.view.ViewGroup
 
+import android.view.Gravity
 import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.Button
@@ -34,10 +35,13 @@ class ScriptAdapter(
         val testButton: Button = view.findViewWithTag("test_button")
     }
 
+
+
 override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScriptViewHolder {
     val view = TableLayout(context).apply {
         setPadding(8.dp, 8.dp, 8.dp, 8.dp)
-        isStretchAllColumns = false // Отключаем растяжение столбцов
+        isStretchAllColumns = false
+        stretchColumns = "1"  // Только вторая колонка растягивается
     }
 
     val row = TableRow(context).apply {
@@ -50,12 +54,13 @@ override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScriptViewHol
             tag = "script_icon"
             layoutParams = TableRow.LayoutParams(48.dp, 48.dp)
             scaleType = ImageView.ScaleType.CENTER_CROP
+            gravity = Gravity.CENTER
         }
 
         val textLayout = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT).apply {
-                weight = 1f // Растягиваем текст до доступного пространства
+                weight = 1f  // Растягивается под экран
             }
             setPadding(8.dp, 0, 8.dp, 0)
 
@@ -79,12 +84,14 @@ override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScriptViewHol
             tag = "active_checkbox"
             contentDescription = "Активен"
             layoutParams = TableRow.LayoutParams(48.dp, TableRow.LayoutParams.WRAP_CONTENT)
+            gravity = Gravity.CENTER
         }
 
         val shortcutCheckBox = CheckBox(context).apply {
             tag = "shortcut_checkbox"
             contentDescription = "Ярлык"
             layoutParams = TableRow.LayoutParams(48.dp, TableRow.LayoutParams.WRAP_CONTENT)
+            gravity = Gravity.CENTER
         }
 
         val testButton = Button(context).apply {
@@ -92,18 +99,23 @@ override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScriptViewHol
             text = "▶️"
             layoutParams = TableRow.LayoutParams(60.dp, TableRow.LayoutParams.WRAP_CONTENT)
             textSize = 12f
+            gravity = Gravity.CENTER
+            visibility = View.VISIBLE
         }
 
-        addView(icon)
-        addView(textLayout)
-        addView(activeCheckBox)
-        addView(shortcutCheckBox)
-        addView(testButton)
+        addView(icon)              // Первая колонка (фиксированная, слева)
+        addView(textLayout)        // Вторая колонка (растягивается)
+        addView(activeCheckBox)    // Третья колонка (фиксированная, справа)
+        addView(shortcutCheckBox)  // Четвертая колонка (фиксированная, справа)
+        addView(testButton)        // Пятая колонка (фиксированная, справа)
     }
 
     view.addView(row)
     return ScriptViewHolder(view)
 }
+
+
+
     override fun onBindViewHolder(holder: ScriptViewHolder, position: Int) {
         val script = scripts[position]
         val config = IniHelper.getScriptConfig(script.name)
