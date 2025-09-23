@@ -31,67 +31,76 @@ class ScriptAdapter(
         val testButton: Button = view.findViewWithTag("test_button")
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScriptViewHolder {
-        val view = LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(8.dp, 8.dp, 8.dp, 8.dp)
-            
-            // ФИКСИРОВАННЫЕ РАЗМЕРЫ КОЛОНОК
-            val icon = ImageView(context).apply {
-                tag = "script_icon"
-                layoutParams = LinearLayout.LayoutParams(48.dp, 48.dp)
-                scaleType = ImageView.ScaleType.CENTER_CROP
-            }
-            
-            val textLayout = LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                setPadding(8.dp, 0, 8.dp, 0)
-                
-                addView(TextView(context).apply {
-                    tag = "script_name"
-                    textSize = 16f
-                    maxLines = 1
-                    ellipsize = android.text.TextUtils.TruncateAt.END
-                    setTypeface(null, android.graphics.Typeface.BOLD)
-                })
-                addView(TextView(context).apply {
-                    tag = "script_description" 
-                    textSize = 12f
-                    maxLines = 1
-                    ellipsize = android.text.TextUtils.TruncateAt.END
-                    setTextColor(0xFF666666.toInt())
-                })
-            }
-            
-            val activeCheckBox = CheckBox(context).apply {
-                tag = "active_checkbox"
-                contentDescription = "Активен"
-                layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
-            }
-            
-            val shortcutCheckBox = CheckBox(context).apply {
-                tag = "shortcut_checkbox"
-                contentDescription = "Ярлык"
-                layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
-            }
-            
-            val testButton = Button(context).apply {
-                tag = "test_button"
-                text = "▶️"
-                layoutParams = LinearLayout.LayoutParams(60.dp, LinearLayout.LayoutParams.WRAP_CONTENT)
-                textSize = 12f
-            }
-            
-            addView(icon)
-            addView(textLayout) 
-            addView(activeCheckBox)
-            addView(shortcutCheckBox)
-            addView(testButton)
-        }
-        return ScriptViewHolder(view)
+override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScriptViewHolder {
+    val view = TableLayout(context).apply {
+        setPadding(8.dp, 8.dp, 8.dp, 8.dp)
+        isStretchAllColumns = false // Отключаем растяжение столбцов
     }
 
+    val row = TableRow(context).apply {
+        layoutParams = TableLayout.LayoutParams(
+            TableLayout.LayoutParams.MATCH_PARENT,
+            TableLayout.LayoutParams.WRAP_CONTENT
+        )
+
+        val icon = ImageView(context).apply {
+            tag = "script_icon"
+            layoutParams = TableRow.LayoutParams(48.dp, 48.dp)
+            scaleType = ImageView.ScaleType.CENTER_CROP
+        }
+
+        val textLayout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT).apply {
+                weight = 1f // Растягиваем текст до доступного пространства
+            }
+            setPadding(8.dp, 0, 8.dp, 0)
+
+            addView(TextView(context).apply {
+                tag = "script_name"
+                textSize = 16f
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setTypeface(null, android.graphics.Typeface.BOLD)
+            })
+            addView(TextView(context).apply {
+                tag = "script_description"
+                textSize = 12f
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setTextColor(0xFF666666.toInt())
+            })
+        }
+
+        val activeCheckBox = CheckBox(context).apply {
+            tag = "active_checkbox"
+            contentDescription = "Активен"
+            layoutParams = TableRow.LayoutParams(48.dp, TableRow.LayoutParams.WRAP_CONTENT)
+        }
+
+        val shortcutCheckBox = CheckBox(context).apply {
+            tag = "shortcut_checkbox"
+            contentDescription = "Ярлык"
+            layoutParams = TableRow.LayoutParams(48.dp, TableRow.LayoutParams.WRAP_CONTENT)
+        }
+
+        val testButton = Button(context).apply {
+            tag = "test_button"
+            text = "▶️"
+            layoutParams = TableRow.LayoutParams(60.dp, TableRow.LayoutParams.WRAP_CONTENT)
+            textSize = 12f
+        }
+
+        addView(icon)
+        addView(textLayout)
+        addView(activeCheckBox)
+        addView(shortcutCheckBox)
+        addView(testButton)
+    }
+
+    view.addView(row)
+    return ScriptViewHolder(view)
+}
     override fun onBindViewHolder(holder: ScriptViewHolder, position: Int) {
         val script = scripts[position]
         val config = IniHelper.getScriptConfig(script.name)

@@ -59,15 +59,41 @@ class MainActivity : Activity() {
         layout.addView(createShortcutButton)
         layout.addView(runCommandButton)
 
-        val headerLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            addView(TextView(this@MainActivity).apply { text = "Иконка"; width = 48.dp })
-            addView(TextView(this@MainActivity).apply { text = "Имя / Описание"; setPadding(8.dp, 0, 0, 0); layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) })
-            addView(TextView(this@MainActivity).apply { text = ""; width = 48.dp }) // Для active
-            addView(TextView(this@MainActivity).apply { text = ""; width = 48.dp }) // Для shortcut
-            addView(TextView(this@MainActivity).apply { text = "▶️"; width = 60.dp }) // Для test
-        }
-        layout.addView(headerLayout)
+val headerLayout = TableLayout(this).apply {
+    isStretchAllColumns = false
+    val row = TableRow(this@MainActivity).apply {
+        addView(TextView(this@MainActivity).apply {
+            text = "Иконка"
+            layoutParams = TableRow.LayoutParams(48.dp, TableRow.LayoutParams.WRAP_CONTENT)
+            gravity = android.view.Gravity.CENTER
+        })
+        addView(TextView(this@MainActivity).apply {
+            text = "Имя / Описание"
+            setPadding(8.dp, 0, 8.dp, 0)
+            layoutParams = TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT).apply {
+                weight = 1f
+            }
+        })
+        addView(TextView(this@MainActivity).apply {
+            text = "A"
+            layoutParams = TableRow.LayoutParams(48.dp, TableRow.LayoutParams.WRAP_CONTENT)
+            gravity = android.view.Gravity.CENTER
+        })
+        addView(TextView(this@MainActivity).apply {
+            text = "S"
+            layoutParams = TableRow.LayoutParams(48.dp, TableRow.LayoutParams.WRAP_CONTENT)
+            gravity = android.view.Gravity.CENTER
+        })
+        addView(TextView(this@MainActivity).apply {
+            text = "▶️"
+            layoutParams = TableRow.LayoutParams(60.dp, TableRow.LayoutParams.WRAP_CONTENT)
+            gravity = android.view.Gravity.CENTER
+        })
+    }
+    addView(row)
+}
+layout.addView(headerLayout)        
+        
 
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
