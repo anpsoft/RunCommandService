@@ -64,8 +64,7 @@ class MainActivity : Activity() {
         layout.addView(runCommandButton)
 
 val headerLayout = TableLayout(this).apply {
-    isStretchAllColumns = false
-    stretchColumns = "1"  // Только вторая колонка растягивается
+    isStretchAllColumns = false  // Отключаем растяжение всех столбцов
     val row = TableRow(this@MainActivity).apply {
         addView(TextView(this@MainActivity).apply {
             text = "Иконка"
@@ -76,7 +75,7 @@ val headerLayout = TableLayout(this).apply {
             text = "Имя / Описание"
             setPadding(8.dp, 0, 8.dp, 0)
             layoutParams = TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT).apply {
-                weight = 1f  // Растягивается под экран
+                weight = 1f  // Только эта колонка растягивается
             }
         })
         addView(TextView(this@MainActivity).apply {
@@ -97,7 +96,7 @@ val headerLayout = TableLayout(this).apply {
     }
     addView(row)
 }
-layout.addView(headerLayout)   
+layout.addView(headerLayout)
         
 
         recyclerView = RecyclerView(this).apply {

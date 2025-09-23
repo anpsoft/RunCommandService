@@ -40,8 +40,7 @@ class ScriptAdapter(
 override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScriptViewHolder {
     val view = TableLayout(context).apply {
         setPadding(8.dp, 8.dp, 8.dp, 8.dp)
-        isStretchAllColumns = false
-        stretchColumns = "1"  // Только вторая колонка растягивается
+        isStretchAllColumns = false  // Отключаем растяжение всех столбцов
     }
 
     val row = TableRow(context).apply {
@@ -60,7 +59,7 @@ override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScriptViewHol
         val textLayout = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT).apply {
-                weight = 1f  // Растягивается под экран
+                weight = 1f  // Только эта колонка растягивается
             }
             setPadding(8.dp, 0, 8.dp, 0)
 
@@ -103,11 +102,11 @@ override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScriptViewHol
             visibility = View.VISIBLE
         }
 
-        addView(icon)              // Первая колонка (фиксированная, слева)
-        addView(textLayout)        // Вторая колонка (растягивается)
-        addView(activeCheckBox)    // Третья колонка (фиксированная, справа)
-        addView(shortcutCheckBox)  // Четвертая колонка (фиксированная, справа)
-        addView(testButton)        // Пятая колонка (фиксированная, справа)
+        addView(icon)              // Фиксированная, слева
+        addView(textLayout)        // Растягивается
+        addView(activeCheckBox)    // Фиксированная, справа
+        addView(shortcutCheckBox)  // Фиксированная, справа
+        addView(testButton)        // Фиксированная, справа
     }
 
     view.addView(row)
