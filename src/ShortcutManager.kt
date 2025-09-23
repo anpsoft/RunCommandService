@@ -1,9 +1,9 @@
 package com.yourcompany.yourapp
 
-import android.app.AlertDialog
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Environment
 import android.widget.Toast
 import java.io.File
 
@@ -42,13 +42,13 @@ object ShortcutManager {
             // Обновляем конфиг
             IniHelper.updateScriptConfig(scriptName, config.copy(hasShortcut = true))
             
-            Toast.makeText(context, "Ярлык создан: $displayName", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Ярлык создан", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Toast.makeText(context, "Ошибка создания ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
     
-    fun deleteShortcut(context: Context, scriptName: String, scriptPath: String, showInstructions: Boolean = true) {
+    fun deleteShortcut(context: Context, scriptName: String, scriptPath: String) {
         try {
             val config = IniHelper.getScriptConfig(scriptName)
             val displayName = config.name.ifEmpty { scriptName }
@@ -70,43 +70,20 @@ object ShortcutManager {
             // Обновляем конфиг
             IniHelper.updateScriptConfig(scriptName, config.copy(hasShortcut = false))
             
-            if (showInstructions) {
-                showRemovalInstructions(context, displayName)
-            } else {
-                Toast.makeText(context, "Команда удаления отправлена", Toast.LENGTH_SHORT).show()
-            }
+            Toast.makeText(context, "Команда удаления отправлена", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Toast.makeText(context, "Ошибка удаления ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
     
-    private fun showRemovalInstructions(context: Context, displayName: String) {
-        AlertDialog.Builder(context)
-            .setTitle("Удаление ярлыка")
-            .setMessage("Отправлена команда удаления ярлыка '$displayName'.\n\nЕсли ярлык остался на рабочем столе:\n1. Найдите его\n2. Долго нажмите\n3. Выберите 'Удалить'")
-            .setPositiveButton("Понятно", null)
-            .show()
-    }
-    
     fun recreateShortcut(context: Context, scriptName: String, scriptPath: String, oldConfig: ScriptConfig, newConfig: ScriptConfig) {
-        // Удаляем старый БЕЗ инструкций
-        deleteShortcut(context, scriptName, scriptPath, false)
+        // Удаляем старый
+        deleteShortcut(context, scriptName, scriptPath)
         
-        // Создаем новый с новыми параметрами
+        // Небольшая задержка
         android.os.Handler().postDelayed({
+            // Создаем новый с новыми параметрами
             createShortcut(context, scriptName, scriptPath, newConfig.icon)
-            Toast.makeText(context, "Ярлык пересоздан", Toast.LENGTH_SHORT).show()
-        }, 1000)
-    }
-    
-    // Синхронизация состояния при первом запуске
-    fun syncShortcutStates(context: Context, scripts: List<Script>) {
-        scripts.forEach { script ->
-            val config = IniHelper.getScriptConfig(script.name)
-            if (config.hasShortcut) {
-                // Ярлык должен быть, но мы не знаем есть ли он реально
-                // Просто показываем что он отмечен
-            }
-        }
+        }, 500)
     }
 }
