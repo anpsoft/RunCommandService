@@ -7,6 +7,7 @@ cat << EOF > app/src/main/AndroidManifest.xml
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT"/>
+    <uses-permission android:name="com.android.launcher.permission.UNINSTALL_SHORTCUT" />
     <uses-permission android:name="com.termux.permission.RUN_COMMAND"/>
     <application
         android:allowBackup="true"
