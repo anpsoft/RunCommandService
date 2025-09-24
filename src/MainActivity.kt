@@ -29,7 +29,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         
         requestPermissions()
-        checkFirstRun()
+        
         
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -175,16 +175,16 @@ class MainActivity : Activity() {
         updateScriptList()
     }
     
-private fun checkFirstRun() {
-    val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
-    if (prefs.getBoolean("first_run", true)) {
-        // Сначала очистить мусор
-        IniHelper.cleanupOrphanedConfigs()
-        // Потом создать ярлыки для валидных скриптов
-        IniHelper.createShortcutsForExisting(this)
-        prefs.edit().putBoolean("first_run", false).apply()
+    private fun checkFirstRun() {
+        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+        if (prefs.getBoolean("first_run", true)) {
+            // Сначала очистить мусор
+            IniHelper.cleanupOrphanedConfigs()
+            // Потом создать ярлыки для валидных скриптов
+            IniHelper.createShortcutsForExisting(this)
+            prefs.edit().putBoolean("first_run", false).apply()
+        }
     }
-}
     
     private fun requestPermissions() {
         val permissions = arrayOf(
@@ -196,19 +196,19 @@ private fun checkFirstRun() {
         ActivityCompat.requestPermissions(this, permissions, 1)
     }
     
-private fun updateScriptList() {
-    val scriptsDir = File(Environment.getExternalStorageDirectory(), "MyScripts")
-    scriptsDir.mkdirs()
-    File(scriptsDir, "icons").mkdirs()
-    
-    // Сначала очистка, потом работа с данными
-    IniHelper.cleanupOrphanedConfigs()
-    
-    val scripts = scriptsDir.listFiles { _, name -> name.endsWith(".sh") }?.map { file ->
-        Script(file.nameWithoutExtension, "/sdcard/MyScripts/${file.name}")
-    }?.filter { showAllScripts || IniHelper.getScriptConfig(it.name).isActive } ?: emptyList()
-    adapter.updateScripts(scripts)
-}
+    private fun updateScriptList() {
+        val scriptsDir = File(Environment.getExternalStorageDirectory(), "MyScripts")
+        scriptsDir.mkdirs()
+        File(scriptsDir, "icons").mkdirs()
+        
+        // Сначала очистка, потом работа с данными
+        IniHelper.cleanupOrphanedConfigs()
+        
+        val scripts = scriptsDir.listFiles { _, name -> name.endsWith(".sh") }?.map { file ->
+            Script(file.nameWithoutExtension, "/sdcard/MyScripts/${file.name}")
+        }?.filter { showAllScripts || IniHelper.getScriptConfig(it.name).isActive } ?: emptyList()
+        adapter.updateScripts(scripts)
+    }
     
     private fun createNewScript() {
         val editText = EditText(this).apply { hint = "Имя скрипта" }
@@ -283,6 +283,17 @@ private fun updateScriptList() {
         .setNegativeButton("Отмена", null)
         .show()
     }
+    
+    
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 1) {
+            // После получения разрешений проверяем первый запуск
+            checkFirstRun()
+            updateScriptList()
+        }
+    }
+    
     
     private val Int.dp: Int
     get() = (this * resources.displayMetrics.density).toInt()
