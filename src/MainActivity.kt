@@ -172,7 +172,7 @@ class MainActivity : Activity() {
     
     override fun onResume() {
         super.onResume()
-        checkFirstRun()
+        // checkFirstRun()
         updateScriptList()
     }
     
