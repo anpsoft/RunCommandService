@@ -12,6 +12,7 @@ import android.widget.EditText
 import android.widget.GridView
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import java.io.File
 
@@ -32,13 +33,47 @@ class ScriptSettingsActivity : Activity() {
             setPadding(16.dp, 16.dp, 16.dp, 16.dp)
         }
 
+        // Отображаемое имя
         val nameEdit = EditText(this).apply {
-            hint = "Имя скрипта"
+            hint = "Отображаемое имя"
             setText(config.name.ifEmpty { scriptName })
         }
+        
+        // Описание
         val descriptionEdit = EditText(this).apply {
             hint = "Описание"
             setText(config.description)
+        }
+        
+        // Строка с именем файла скрипта и кнопкой редактирования
+        val fileLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
+        val fileLabel = TextView(this).apply {
+            text = "Файл: $scriptName.sh"
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        val editFileButton = Button(this).apply {
+            text = "Редактировать"
+            setOnClickListener {
+                val scriptFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh")
+                val intent = Intent(Intent.ACTION_EDIT).apply {
+                    setDataAndType(Uri.fromFile(scriptFile), "text/plain")
+                }
+                val chooser = Intent.createChooser(intent, "Открыть редактором")
+                if (chooser.resolveActivity(packageManager) != null) {
+                    startActivity(chooser)
+                } else {
+                    Toast.makeText(this@ScriptSettingsActivity, "Нет редактора", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        fileLayout.addView(fileLabel)
+        fileLayout.addView(editFileButton)
+        
+        // Строка с иконкой и кнопкой выбора
+        val iconLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
         }
         val iconView = ImageView(this).apply {
             val iconFile = File(Environment.getExternalStorageDirectory(), "MyScripts/icons/${config.icon}")
@@ -51,18 +86,42 @@ class ScriptSettingsActivity : Activity() {
         }
         val iconButton = Button(this).apply {
             text = "Выбрать иконку"
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             setOnClickListener { showIconPicker(scriptName, config, iconView) }
         }
+        iconLayout.addView(iconView)
+        iconLayout.addView(iconButton)
+        
         val activeCheckBox = CheckBox(this).apply {
+            text = "Показывать в списке"
             isChecked = config.isActive
-            contentDescription = "Активен"
         }
+        
+        val testButton = Button(this).apply {
+            text = "Тест скрипта"
+            setOnClickListener {
+                val scriptPath = "/sdcard/MyScripts/$scriptName.sh"
+                val file = File(scriptPath)
+                if (!file.exists()) {
+                    Toast.makeText(this@ScriptSettingsActivity, "Скрипт не существует", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                if (!TermuxHelper.hasPermission(this@ScriptSettingsActivity)) {
+                    Toast.makeText(this@ScriptSettingsActivity, "Нет разрешения Termux", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                TermuxHelper.startTermuxSilently(this@ScriptSettingsActivity)
+                Thread.sleep(1500)
+                TermuxHelper.sendCommand(this@ScriptSettingsActivity, scriptPath)
+            }
+        }
+        
         val renameButton = Button(this).apply {
-            text = "Переименовать"
+            text = "Переименовать файл"
             setOnClickListener {
                 val newNameEdit = EditText(this@ScriptSettingsActivity).apply { setText(scriptName) }
                 AlertDialog.Builder(this@ScriptSettingsActivity)
-                    .setTitle("Переименовать скрипт")
+                    .setTitle("Переименовать файл скрипта")
                     .setView(newNameEdit)
                     .setPositiveButton("ОК") { _, _ ->
                         val newName = newNameEdit.text.toString()
@@ -70,8 +129,11 @@ class ScriptSettingsActivity : Activity() {
                             val oldFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh")
                             val newFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$newName.sh")
                             if (oldFile.exists() && !newFile.exists() && oldFile.renameTo(newFile)) {
-                                IniHelper.renameScriptConfig(scriptName, newName, config.copy(name = newName))
-                                Toast.makeText(this@ScriptSettingsActivity, "Скрипт переименован", Toast.LENGTH_SHORT).show()
+                                // Переименовываем секцию в ini
+                                val currentConfig = IniHelper.getScriptConfig(scriptName)
+                                IniHelper.deleteScriptConfig(scriptName)
+                                IniHelper.addScriptConfig(newName, currentConfig)
+                                Toast.makeText(this@ScriptSettingsActivity, "Файл переименован", Toast.LENGTH_SHORT).show()
                                 finish()
                             } else {
                                 Toast.makeText(this@ScriptSettingsActivity, "Ошибка переименования", Toast.LENGTH_SHORT).show()
@@ -82,6 +144,7 @@ class ScriptSettingsActivity : Activity() {
                     .show()
             }
         }
+        
         val deleteButton = Button(this).apply {
             text = "Удалить"
             setOnClickListener {
@@ -97,6 +160,7 @@ class ScriptSettingsActivity : Activity() {
                     .show()
             }
         }
+        
         val saveButton = Button(this).apply {
             text = "Сохранить"
             setOnClickListener {
@@ -116,6 +180,7 @@ class ScriptSettingsActivity : Activity() {
                 }
             }
         }
+        
         val cancelButton = Button(this).apply {
             text = "Отмена"
             setOnClickListener { finish() }
@@ -123,9 +188,10 @@ class ScriptSettingsActivity : Activity() {
 
         layout.addView(nameEdit)
         layout.addView(descriptionEdit)
-        layout.addView(iconView)
-        layout.addView(iconButton)
+        layout.addView(fileLayout)
+        layout.addView(iconLayout)
         layout.addView(activeCheckBox)
+        layout.addView(testButton)
         layout.addView(renameButton)
         layout.addView(deleteButton)
         layout.addView(saveButton)
@@ -133,16 +199,6 @@ class ScriptSettingsActivity : Activity() {
 
         setContentView(layout)
 
-        nameEdit.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) { }
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) { }
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { }
-        })
-        descriptionEdit.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) { }
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) { }
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { }
-        })
         activeCheckBox.setOnCheckedChangeListener { _, isChecked ->
             config = config.copy(isActive = isChecked)
         }
@@ -177,11 +233,11 @@ class ScriptSettingsActivity : Activity() {
             .show()
     }
 
-private fun showShortcutUpdateDialog(scriptName: String, oldConfig: ScriptConfig, newConfig: ScriptConfig) {
-    val scriptPath = File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh").absolutePath
-    ShortcutManager.showShortcutUpdateDialog(this, scriptName, scriptPath, oldConfig, newConfig)
-    finish()
-}
+    private fun showShortcutUpdateDialog(scriptName: String, oldConfig: ScriptConfig, newConfig: ScriptConfig) {
+        val scriptPath = File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh").absolutePath
+        ShortcutManager.showShortcutUpdateDialog(this, scriptName, scriptPath, oldConfig, newConfig)
+        finish()
+    }
 
     private val Int.dp: Int
         get() = (this * resources.displayMetrics.density).toInt()

@@ -29,6 +29,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         
         requestPermissions()
+        checkFirstRun()
         
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -48,7 +49,13 @@ class MainActivity : Activity() {
             }
         }
         
-        
+        private fun checkFirstRun() {
+            val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+            if (prefs.getBoolean("first_run", true)) {
+                IniHelper.createShortcutsForExisting(this)
+                prefs.edit().putBoolean("first_run", false).apply()
+            }
+        }  
         
         val runCommandButton = Button(this).apply {
             text = "Отправить команду"
@@ -186,44 +193,48 @@ class MainActivity : Activity() {
         ActivityCompat.requestPermissions(this, permissions, 1)
     }
     
-    private fun updateScriptList() {
-        val scriptsDir = File(Environment.getExternalStorageDirectory(), "MyScripts")
-        scriptsDir.mkdirs()
-        val scripts = scriptsDir.listFiles { _, name -> name.endsWith(".sh") }?.map { file ->
-            Script(file.nameWithoutExtension, "/sdcard/MyScripts/${file.name}")
-        }?.filter { showAllScripts || IniHelper.getScriptConfig(it.name).isActive } ?: emptyList()
-        adapter.updateScripts(scripts)
-    }
+private fun updateScriptList() {
+    val scriptsDir = File(Environment.getExternalStorageDirectory(), "MyScripts")
+    scriptsDir.mkdirs()
+    File(scriptsDir, "icons").mkdirs() // создаем папку иконок
     
-    private fun createNewScript() {
-        val editText = EditText(this).apply { hint = "Имя скрипта" }
-        AlertDialog.Builder(this)
-        .setTitle("Новый скрипт")
-        .setView(editText)
-        .setPositiveButton("OK") { _, _ ->
-            val name = editText.text.toString()
-            if (name.isNotEmpty()) {
-                val scriptFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$name.sh")
-                if (scriptFile.createNewFile()) {
-                    IniHelper.addScriptConfig(name, ScriptConfig(name = name, isActive = false))
-                    val intent = Intent(Intent.ACTION_EDIT).apply {
-                        setDataAndType(Uri.fromFile(scriptFile), "text/plain")
-                    }
-                    val chooser = Intent.createChooser(intent, "Открыть редактором")
-                    if (chooser.resolveActivity(packageManager) != null) {
-                        startActivity(chooser)
-                        } else {
-                        Toast.makeText(this, "Нет редактора", Toast.LENGTH_SHORT).show()
-                    }
-                    updateScriptList()
-                    } else {
-                    Toast.makeText(this, "Файл уже существует", Toast.LENGTH_SHORT).show()
+    IniHelper.cleanupOrphanedConfigs() // очистка мусора
+    
+    val scripts = scriptsDir.listFiles { _, name -> name.endsWith(".sh") }?.map { file ->
+        Script(file.nameWithoutExtension, "/sdcard/MyScripts/${file.name}")
+    }?.filter { showAllScripts || IniHelper.getScriptConfig(it.name).isActive } ?: emptyList()
+    adapter.updateScripts(scripts)
+}
+
+private fun createNewScript() {
+    val editText = EditText(this).apply { hint = "Имя скрипта" }
+    AlertDialog.Builder(this)
+    .setTitle("Новый скрипт")
+    .setView(editText)
+    .setPositiveButton("OK") { _, _ ->
+        val name = editText.text.toString()
+        if (name.isNotEmpty()) {
+            val scriptFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$name.sh")
+            if (scriptFile.createNewFile()) {
+                IniHelper.addScriptConfig(name, ScriptConfig(name = name, isActive = true)) // isActive = true
+                val intent = Intent(Intent.ACTION_EDIT).apply {
+                    setDataAndType(Uri.fromFile(scriptFile), "text/plain")
                 }
+                val chooser = Intent.createChooser(intent, "Открыть редактором")
+                if (chooser.resolveActivity(packageManager) != null) {
+                    startActivity(chooser)
+                    } else {
+                    Toast.makeText(this, "Нет редактора", Toast.LENGTH_SHORT).show()
+                }
+                updateScriptList()
+                } else {
+                Toast.makeText(this, "Файл уже существует", Toast.LENGTH_SHORT).show()
             }
         }
-        .setNegativeButton("Отмена", null)
-        .show()
     }
+    .setNegativeButton("Отмена", null)
+    .show()
+}
     
     private fun onScriptSettings(script: Script) {
         val intent = Intent(this, ScriptSettingsActivity::class.java).apply {
