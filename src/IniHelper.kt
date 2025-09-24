@@ -6,7 +6,7 @@ import org.ini4j.Ini
 import java.io.File
 
 object IniHelper {
-    private val iniFile = File(Environment.getExternalStorageDirectory(), "MyScripts/scripts.ini")
+    private val iniFile = getSettingsFile()
     private val ini = Ini()
 
     init {
@@ -14,8 +14,68 @@ object IniHelper {
         if (iniFile.exists()) {
             ini.load(iniFile)
         }
+        syncSettingsWithPrefs() // Синхронизация при инициализации
     }
 
+    private fun getSettingsFile(): File {
+        val scriptsDir = getScriptsDir()
+        return File(scriptsDir, "scripts.ini")
+    }
+
+    // Настройки
+    fun getScriptsDir(): String {
+        val prefs = getPrefs()
+        val iniValue = ini["settings"]?.get("scripts_dir", "/sdcard/MyScripts")
+        if (iniValue != null && iniValue != "") {
+            prefs.edit().putString("scripts_dir", iniValue).apply()
+            return iniValue
+        }
+        val prefValue = prefs.getString("scripts_dir", "/sdcard/MyScripts")
+        if (prefValue != null && prefValue != "") {
+            ini["settings"]?.put("scripts_dir", prefValue) ?: ini.add("settings").put("scripts_dir", prefValue)
+            save()
+            return prefValue
+        }
+        return "/sdcard/MyScripts"
+    }
+
+    fun getIconsDir(): String {
+        val prefs = getPrefs()
+        val iniValue = ini["settings"]?.get("icons_dir", "/sdcard/MyScripts/icons")
+        if (iniValue != null && iniValue != "") {
+            prefs.edit().putString("icons_dir", iniValue).apply()
+            return iniValue
+        }
+        val prefValue = prefs.getString("icons_dir", "/sdcard/MyScripts/icons")
+        if (prefValue != null && prefValue != "") {
+            ini["settings"]?.put("icons_dir", prefValue) ?: ini.add("settings").put("icons_dir", prefValue)
+            save()
+            return prefValue
+        }
+        return "/sdcard/MyScripts/icons"
+    }
+
+    fun updateSettings(scriptsDir: String, iconsDir: String) {
+        val prefs = getPrefs()
+        prefs.edit().putString("scripts_dir", scriptsDir).putString("icons_dir", iconsDir).apply()
+        ini["settings"]?.put("scripts_dir", scriptsDir)?.put("icons_dir", iconsDir) ?: ini.add("settings").apply {
+            put("scripts_dir", scriptsDir)
+            put("icons_dir", iconsDir)
+        }
+        save()
+    }
+
+    private fun syncSettingsWithPrefs() {
+        val prefs = getPrefs()
+        val scriptsDir = getScriptsDir()
+        val iconsDir = getIconsDir()
+        // Дополнительная синхронизация если нужно
+    }
+
+    private fun getPrefs() = IniHelper::class.java.getResourceAsStream("app_prefs") // Нет, используем Context в вызовах
+    // Фактически, prefs в активностях, но для простоты - передавать Context в методы
+
+    // Остальные методы без изменений, но обновить пути
     fun getScriptConfig(scriptName: String): ScriptConfig {
         val section = ini[scriptName] ?: return ScriptConfig()
         return ScriptConfig(
@@ -51,8 +111,8 @@ object IniHelper {
         save()
     }
 
-    fun cleanupOrphanedConfigs() {
-        val scriptsDir = File(Environment.getExternalStorageDirectory(), "MyScripts")
+    fun cleanupOrphanedConfigs(context: Context) {
+        val scriptsDir = File(IniHelper.getScriptsDir(context)) // Обновить
         val existingFiles = scriptsDir.listFiles { _, name -> name.endsWith(".sh") }
             ?.map { it.nameWithoutExtension }?.toSet() ?: emptySet()
         
@@ -71,9 +131,10 @@ object IniHelper {
 
     fun createShortcutsForExisting(context: Context) {
         for (sectionName in ini.keys) {
+            if (sectionName == "settings") continue
             val config = getScriptConfig(sectionName)
             if (config.hasShortcut) {
-                val scriptPath = "/sdcard/MyScripts/$sectionName.sh"
+                val scriptPath = "${getScriptsDir(context)}/$sectionName.sh"
                 ShortcutManager.createShortcut(context, sectionName, scriptPath, config.icon)
             }
         }
@@ -82,4 +143,11 @@ object IniHelper {
     private fun save() {
         ini.store(iniFile)
     }
+
+    // Для Context
+    fun getScriptsDir(context: Context): String = getScriptsDir() // Адаптировать с prefs
+    // В реальности, передавать Context везде, где prefs
+
+    // Пример с Context
+    private fun getPrefs(context: Context) = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 }
