@@ -5,7 +5,6 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
@@ -33,19 +32,16 @@ class ScriptSettingsActivity : Activity() {
             setPadding(16.dp, 16.dp, 16.dp, 16.dp)
         }
 
-        // Отображаемое имя
         val nameEdit = EditText(this).apply {
             hint = "Отображаемое имя"
             setText(config.name.ifEmpty { scriptName })
         }
 
-        // Описание
         val descriptionEdit = EditText(this).apply {
             hint = "Описание"
             setText(config.description)
         }
 
-        // Строка с именем файла, редактировать и переименовать
         val fileLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
         }
@@ -99,7 +95,6 @@ class ScriptSettingsActivity : Activity() {
         fileLayout.addView(editFileButton)
         fileLayout.addView(renameButton)
 
-        // Строка с иконкой и кнопкой выбора
         val iconLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
         }
@@ -115,7 +110,6 @@ class ScriptSettingsActivity : Activity() {
         val iconButton = Button(this).apply {
             text = "Выбрать иконку"
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
- authorization = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
             setOnClickListener { showIconPicker(scriptName, config, iconView) }
         }
         iconLayout.addView(iconView)

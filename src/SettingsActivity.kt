@@ -20,12 +20,12 @@ class SettingsActivity : Activity() {
 
         val scriptsEdit = EditText(this).apply {
             hint = "Папка для скриптов"
-            setText(IniHelper.getScriptsDir(this))
+            setText(IniHelper.getScriptsDir(this@SettingsActivity))
         }
 
         val iconsEdit = EditText(this).apply {
             hint = "Папка для иконок"
-            setText(IniHelper.getIconsDir(this))
+            setText(IniHelper.getIconsDir(this@SettingsActivity))
         }
 
         val saveButton = Button(this).apply {
@@ -34,8 +34,7 @@ class SettingsActivity : Activity() {
                 val scriptsDir = scriptsEdit.text.toString()
                 val iconsDir = iconsEdit.text.toString()
                 if (scriptsDir.isNotEmpty() && iconsDir.isNotEmpty()) {
-                    IniHelper.updateSettings(scriptsDir, iconsDir)
-                    // Проверить существование
+                    IniHelper.updateSettings(this@SettingsActivity, scriptsDir, iconsDir)
                     if (!File(scriptsDir).mkdirs()) Toast.makeText(this@SettingsActivity, "Ошибка создания папки скриптов", Toast.LENGTH_SHORT).show()
                     if (!File(iconsDir).mkdirs()) Toast.makeText(this@SettingsActivity, "Ошибка создания папки иконок", Toast.LENGTH_SHORT).show()
                     Toast.makeText(this@SettingsActivity, "Сохранено", Toast.LENGTH_SHORT).show()
@@ -60,5 +59,6 @@ class SettingsActivity : Activity() {
         setContentView(layout)
     }
 
-    private val Int.dp: Int = (this * resources.displayMetrics.density).toInt()
+    private val Int.dp: Int
+        get() = (this * resources.displayMetrics.density).toInt()
 }

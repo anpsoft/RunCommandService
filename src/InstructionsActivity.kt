@@ -25,12 +25,13 @@ class InstructionsActivity : Activity() {
             textView.text = reader.readText()
             reader.close()
         } catch (e: Exception) {
-            textView.text = "Файл не найден"
+            textView.text = "Файл инструкции не найден"
         }
 
         scrollView.addView(textView)
         setContentView(scrollView)
     }
 
-    private val Int.dp: Int = (this * resources.displayMetrics.density).toInt()
+    private val Int.dp: Int
+        get() = (this * resources.displayMetrics.density).toInt()
 }

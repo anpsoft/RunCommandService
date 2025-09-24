@@ -115,7 +115,8 @@ class ScriptAdapter(
 
         //val iconFile = File(Environment.getExternalStorageDirectory(), "MyScripts/icons/${config.icon}")
         
-        val iconFile = File(IniHelper.getIconsDir(context), "icons/${config.icon}")
+
+        val iconFile = File(IniHelper.getIconsDir(context), config.icon)
         
         if (config.icon.isNotEmpty() && iconFile.exists()) {
             holder.icon.setImageURI(Uri.fromFile(iconFile))

@@ -8,7 +8,7 @@ import android.widget.TextView
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
-class InstructionsActivity : Activity() {
+class AboutActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,12 +25,13 @@ class InstructionsActivity : Activity() {
             textView.text = reader.readText()
             reader.close()
         } catch (e: Exception) {
-            textView.text = "Файл не найден"
+            textView.text = "Файл о программе не найден"
         }
 
         scrollView.addView(textView)
         setContentView(scrollView)
     }
 
-    private val Int.dp: Int = (this * resources.displayMetrics.density).toInt()
+    private val Int.dp: Int
+        get() = (this * resources.displayMetrics.density).toInt()
 }

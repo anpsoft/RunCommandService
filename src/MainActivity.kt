@@ -27,6 +27,8 @@ class MainActivity : Activity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        IniHelper.init(this)
+        
         
         // Запрос прав сразу, но НЕ лезем в файлы
         requestPermissions()
@@ -37,15 +39,15 @@ class MainActivity : Activity() {
         }
         
         // Добавление меню настроек
-// В layout, добавить ImageButton для настроек
-val settingsButton = android.widget.ImageButton(this).apply {
-    setImageResource(android.R.drawable.ic_menu_preferences)
-    layoutParams = android.widget.LinearLayout.LayoutParams(48.dp, 48.dp).apply {
-        gravity = Gravity.END or Gravity.TOP
-    }
-    setOnClickListener { showSettingsMenu() }
-}
-layout.addView(settingsButton, 0) // Сверху справа, но LinearLayout - подкорректировать
+        // В layout, добавить ImageButton для настроек
+        val settingsButton = android.widget.ImageButton(this).apply {
+            setImageResource(android.R.drawable.ic_menu_preferences)
+            layoutParams = android.widget.LinearLayout.LayoutParams(48.dp, 48.dp).apply {
+                gravity = Gravity.END or Gravity.TOP
+            }
+            setOnClickListener { showSettingsMenu() }
+        }
+        layout.addView(settingsButton, 0) // Сверху справа, но LinearLayout - подкорректировать
         
         val createShortcutButton = Button(this).apply {
             text = "Создать ссылк"
@@ -181,8 +183,8 @@ layout.addView(settingsButton, 0) // Сверху справа, но LinearLayou
     }
     
     
-    private fun showSettingsMenu() {
-        val items = arrayOf("Настройки", "Инструкция", "О программе")
+private fun showSettingsMenu() {
+    val items = arrayOf("Настройки", "Инструкция", "О программе")
     AlertDialog.Builder(this)
         .setTitle("Меню")
         .setItems(items) { _, which ->
@@ -205,15 +207,15 @@ layout.addView(settingsButton, 0) // Сверху справа, но LinearLayou
         
     }
     
-private fun checkFirstRun() {
-    val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
-    if (prefs.getBoolean("first_run", true)) {
-        if (!hasStoragePermission()) return
-        IniHelper.cleanupOrphanedConfigs(this)
-        IniHelper.createShortcutsForExisting(this)
-        prefs.edit().putBoolean("first_run", false).apply()
+    private fun checkFirstRun() {
+        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+        if (prefs.getBoolean("first_run", true)) {
+            if (!hasStoragePermission()) return
+            IniHelper.cleanupOrphanedConfigs(this)
+            IniHelper.createShortcutsForExisting(this)
+            prefs.edit().putBoolean("first_run", false).apply()
+        }
     }
-}
     
     
     private fun requestPermissions() {
@@ -251,8 +253,8 @@ private fun updateScriptList() {
     }?.filter { showAllScripts || IniHelper.getScriptConfig(it.name).isActive } ?: emptyList()
     adapter.updateScripts(scripts)
 }
-
-
+    
+    
     private fun createNewScript() {
         val editText = EditText(this).apply { hint = "Имя скрипта" }
         AlertDialog.Builder(this)
