@@ -24,18 +24,18 @@ class MainActivity : Activity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: ScriptAdapter
     private var showAllScripts = false
-
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        
         // Запрос прав сразу, но НЕ лезем в файлы
         requestPermissions()
-
+        
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(16, 16, 16, 16)
         }
-
+        
         val createShortcutButton = Button(this).apply {
             text = "Создать ссылк"
             setOnClickListener {
@@ -48,21 +48,21 @@ class MainActivity : Activity() {
                 )
             }
         }
-
+        
         val runCommandButton = Button(this).apply {
             text = "Отправить команду"
             setOnClickListener {
                 if (!TermuxHelper.hasPermission(this@MainActivity)) {
                     showPermissionDialog()
-                } else {
+                    } else {
                     TermuxHelper.sendCommand(this@MainActivity, "/sdcard/MyScripts/UpdateWDS.sh")
                 }
             }
         }
-
+        
         layout.addView(createShortcutButton)
         layout.addView(runCommandButton)
-
+        
         val headerLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             setPadding(4, 4, 4, 4)
@@ -71,7 +71,7 @@ class MainActivity : Activity() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
         }
-
+        
         val headerIcon = TextView(this).apply {
             text = "Иконка"
             layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
@@ -80,14 +80,14 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
             setBackgroundColor(0xFFF0F0F0.toInt())
         }
-
+        
         val headerText = TextView(this).apply {
             text = "Имя / Описание"
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             setPadding(4, 0, 4, 0)
             setBackgroundColor(0xFFF0F0F0.toInt())
         }
-
+        
         val headerActive = TextView(this).apply {
             text = "A"
             layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
@@ -96,7 +96,7 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
             setBackgroundColor(0xFFF0F0F0.toInt())
         }
-
+        
         val headerShortcut = TextView(this).apply {
             text = "S"
             layoutParams = LinearLayout.LayoutParams(48.dp, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
@@ -105,7 +105,7 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
             setBackgroundColor(0xFFF0F0F0.toInt())
         }
-
+        
         val headerTest = TextView(this).apply {
             text = "▶️"
             layoutParams = LinearLayout.LayoutParams(60.dp, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
@@ -114,20 +114,20 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
             setBackgroundColor(0xFFF0F0F0.toInt())
         }
-
+        
         headerLayout.addView(headerIcon)
         headerLayout.addView(headerText)
         headerLayout.addView(headerActive)
         headerLayout.addView(headerShortcut)
         headerLayout.addView(headerTest)
         layout.addView(headerLayout)
-
+        
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
         }
         adapter = ScriptAdapter(this, ::onScriptSettings, ::onTestRun)
         recyclerView.adapter = adapter
-
+        
         val scrollView = ScrollView(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -135,10 +135,10 @@ class MainActivity : Activity() {
                 1f
             )
         }
-
+        
         scrollView.addView(recyclerView)
         layout.addView(scrollView)
-
+        
         val bottomButtons = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
         }
@@ -165,26 +165,31 @@ class MainActivity : Activity() {
         bottomButtons.addView(createScriptButton)
         bottomButtons.addView(showAllButton)
         layout.addView(bottomButtons)
-
+        
         setContentView(layout)
     }
-
+    
     override fun onResume() {
         super.onResume()
+        
         if (hasStoragePermission()) {
+            checkFirstRun()
             updateScriptList()
         }
+        
     }
-
+    
     private fun checkFirstRun() {
         val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
         if (prefs.getBoolean("first_run", true)) {
+            if (!hasStoragePermission()) return   // пока нет прав — не делаем ничего
             IniHelper.cleanupOrphanedConfigs()
             IniHelper.createShortcutsForExisting(this)
             prefs.edit().putBoolean("first_run", false).apply()
         }
     }
-
+    
+    
     private fun requestPermissions() {
         val permissions = arrayOf(
             "android.permission.READ_EXTERNAL_STORAGE",
@@ -194,73 +199,77 @@ class MainActivity : Activity() {
         )
         ActivityCompat.requestPermissions(this, permissions, 1)
     }
-
+    
+    
     private fun hasStoragePermission(): Boolean {
         return ActivityCompat.checkSelfPermission(
             this, android.Manifest.permission.READ_EXTERNAL_STORAGE
         ) == PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(
-                    this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-                ) == PackageManager.PERMISSION_GRANTED
+        ActivityCompat.checkSelfPermission(
+            this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+        ) == PackageManager.PERMISSION_GRANTED
     }
-
+    
+    
     private fun updateScriptList() {
         val scriptsDir = File(Environment.getExternalStorageDirectory(), "MyScripts")
         scriptsDir.mkdirs()
         File(scriptsDir, "icons").mkdirs()
-
+        
         IniHelper.cleanupOrphanedConfigs()
-
+        
         val scripts = scriptsDir.listFiles { _, name -> name.endsWith(".sh") }?.map { file ->
             Script(file.nameWithoutExtension, "/sdcard/MyScripts/${file.name}")
         }?.filter { showAllScripts || IniHelper.getScriptConfig(it.name).isActive } ?: emptyList()
         adapter.updateScripts(scripts)
     }
-
+    
     private fun createNewScript() {
         val editText = EditText(this).apply { hint = "Имя скрипта" }
         AlertDialog.Builder(this)
-            .setTitle("Новый скрипт")
-            .setView(editText)
-            .setPositiveButton("OK") { _, _ ->
-                val name = editText.text.toString()
-                if (name.isNotEmpty()) {
-                    val scriptFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$name.sh")
-                    if (scriptFile.createNewFile()) {
-                        IniHelper.addScriptConfig(name, ScriptConfig(name = name, isActive = true))
-                        val intent = Intent(Intent.ACTION_EDIT).apply {
-                            setDataAndType(Uri.fromFile(scriptFile), "text/plain")
-                        }
-                        val chooser = Intent.createChooser(intent, "Открыть редактором")
-                        if (chooser.resolveActivity(packageManager) != null) {
-                            startActivity(chooser)
-                        } else {
-                            Toast.makeText(this, "Нет редактора", Toast.LENGTH_SHORT).show()
-                        }
-                        updateScriptList()
-                    } else {
-                        Toast.makeText(this, "Файл уже существует", Toast.LENGTH_SHORT).show()
+        .setTitle("Новый скрипт")
+        .setView(editText)
+        .setPositiveButton("OK") { _, _ ->
+            val name = editText.text.toString()
+            if (name.isNotEmpty()) {
+                val scriptFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$name.sh")
+                if (scriptFile.createNewFile()) {
+                    IniHelper.addScriptConfig(name, ScriptConfig(name = name, isActive = true))
+                    val intent = Intent(Intent.ACTION_EDIT).apply {
+                        setDataAndType(Uri.fromFile(scriptFile), "text/plain")
                     }
+                    val chooser = Intent.createChooser(intent, "Открыть редактором")
+                    if (chooser.resolveActivity(packageManager) != null) {
+                        startActivity(chooser)
+                        } else {
+                        Toast.makeText(this, "Нет редактора", Toast.LENGTH_SHORT).show()
+                    }
+                    updateScriptList()
+                    } else {
+                    Toast.makeText(this, "Файл уже существует", Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("Отмена", null)
-            .show()
+        }
+        .setNegativeButton("Отмена", null)
+        .show()
     }
-
+    
     private fun onScriptSettings(script: Script) {
         val intent = Intent(this, ScriptSettingsActivity::class.java).apply {
             putExtra("script_name", script.name)
         }
         startActivity(intent)
     }
-
+    
     override fun onStart() {
         super.onStart()
         if (hasStoragePermission()) {
+            checkFirstRun()
             updateScriptList()
         }
+        
     }
-
+    
     private fun onTestRun(script: Script) {
         if (!TermuxHelper.hasPermission(this)) {
             showPermissionDialog()
@@ -275,32 +284,39 @@ class MainActivity : Activity() {
         Thread.sleep(500) // 1500
         TermuxHelper.sendCommand(this, script.path)
     }
-
+    
     private fun showPermissionDialog() {
         AlertDialog.Builder(this)
-            .setTitle("Требуется разрешение")
-            .setMessage("Для работы с Termux нужно предоставить разрешение. Перейдите в Настройки > Приложения > ${packageManager.getApplicationLabel(applicationInfo)} > Разрешения и включите 'Запуск команд Termux'")
-            .setPositiveButton("Открыть настройки") { _, _ ->
-                try {
-                    val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                    intent.data = android.net.Uri.parse("package:$packageName")
-                    startActivity(intent)
+        .setTitle("Требуется разрешение")
+        .setMessage("Для работы с Termux нужно предоставить разрешение. Перейдите в Настройки > Приложения > ${packageManager.getApplicationLabel(applicationInfo)} > Разрешения и включите 'Запуск команд Termux'")
+        .setPositiveButton("Открыть настройки") { _, _ ->
+            try {
+                val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                intent.data = android.net.Uri.parse("package:$packageName")
+                startActivity(intent)
                 } catch (e: Exception) {
-                    Toast.makeText(this, "Не удалось открыть настройки", Toast.LENGTH_SHORT).show()
-                }
+                Toast.makeText(this, "Не удалось открыть настройки", Toast.LENGTH_SHORT).show()
             }
-            .setNegativeButton("Отмена", null)
-            .show()
+        }
+        .setNegativeButton("Отмена", null)
+        .show()
     }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
+        ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        
         if (requestCode == 1 && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+            // Теперь точно есть права — выполняем первый запуск
             checkFirstRun()
             updateScriptList()
+            } else {
+            Toast.makeText(this, "Разрешения не даны — приложение не сможет работать полностью", Toast.LENGTH_SHORT).show()
         }
     }
-
+    
+    
     private val Int.dp: Int
-        get() = (this * resources.displayMetrics.density).toInt()
+    get() = (this * resources.displayMetrics.density).toInt()
 }
