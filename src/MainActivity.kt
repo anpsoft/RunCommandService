@@ -172,6 +172,7 @@ class MainActivity : Activity() {
     
     override fun onResume() {
         super.onResume()
+        checkFirstRun()
         updateScriptList()
     }
     
@@ -289,7 +290,7 @@ class MainActivity : Activity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 1) {
             // После получения разрешений проверяем первый запуск
-            checkFirstRun()
+            
             updateScriptList()
         }
     }
