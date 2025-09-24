@@ -177,26 +177,11 @@ class ScriptSettingsActivity : Activity() {
             .show()
     }
 
-    private fun showShortcutUpdateDialog(scriptName: String, oldConfig: ScriptConfig, newConfig: ScriptConfig) {
-        AlertDialog.Builder(this)
-            .setTitle("Обновить ярлык?")
-            .setMessage("Имя или иконка изменились. Нужно пересоздать ярлык:\n\n" +
-                       "Старый: '${oldConfig.name}'\n" + 
-                       "Новый: '${newConfig.name}'")
-            .setPositiveButton("Да, обновить") { _, _ ->
-                val scriptPath = File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh").absolutePath
-                ShortcutManager.recreateShortcut(this, scriptName, scriptPath, oldConfig, newConfig)
-                IniHelper.updateScriptConfig(scriptName, newConfig)
-                Toast.makeText(this, "Ярлык будет обновлен", Toast.LENGTH_SHORT).show()
-                finish()
-            }
-            .setNegativeButton("Нет, только настройки") { _, _ ->
-                IniHelper.updateScriptConfig(scriptName, newConfig)
-                Toast.makeText(this, "Сохранено без обновления ярлыка", Toast.LENGTH_SHORT).show()
-                finish()
-            }
-            .show()
-    }
+private fun showShortcutUpdateDialog(scriptName: String, oldConfig: ScriptConfig, newConfig: ScriptConfig) {
+    val scriptPath = File(Environment.getExternalStorageDirectory(), "MyScripts/$scriptName.sh").absolutePath
+    ShortcutManager.showShortcutUpdateDialog(this, scriptName, scriptPath, oldConfig, newConfig)
+    finish()
+}
 
     private val Int.dp: Int
         get() = (this * resources.displayMetrics.density).toInt()

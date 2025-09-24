@@ -144,14 +144,23 @@ class ScriptAdapter(
         }
     }
 
-    private fun handleShortcutToggle(script: Script, config: ScriptConfig, isChecked: Boolean, holder: ScriptViewHolder) {
-        if (isChecked) {
-            ShortcutManager.createShortcut(context, script.name, script.path, config.icon)
-        } else {
-            ShortcutManager.deleteShortcut(context, script.name, script.path)
-        }
+private fun handleShortcutToggle(script: Script, config: ScriptConfig, isChecked: Boolean, holder: ScriptViewHolder) {
+    if (isChecked) {
+        ShortcutManager.createShortcut(context, script.name, script.path, config.icon)
+    } else {
+        // Показываем диалог вместо удаления
+        android.app.AlertDialog.Builder(context)
+            .setTitle("Удаление ярлыка")
+            .setMessage("Android 7 не позволяет программно удалять ярлыки. Удалите ярлык '${config.name.ifEmpty { script.name }}' с рабочего стола вручную.")
+            .setPositiveButton("Я удалил") { _, _ ->
+                IniHelper.updateScriptConfig(script.name, config.copy(hasShortcut = false))
+            }
+            .setNegativeButton("Отменить") { _, _ ->
+                holder.shortcutCheckBox.isChecked = true
+            }
+            .show()
     }
-
+}
     override fun getItemCount(): Int = scripts.size
 
     fun updateScripts(newScripts: List<Script>) {

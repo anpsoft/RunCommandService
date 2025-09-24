@@ -48,42 +48,34 @@ object ShortcutManager {
         }
     }
     
-fun deleteShortcut(context: Context, scriptName: String, scriptPath: String) {
+fun showManualDeleteDialog(context: Context, scriptName: String) {
     val config = IniHelper.getScriptConfig(scriptName)
     val displayName = config.name.ifEmpty { scriptName }
     
-    // Показываем что пытаемся удалить
-    Toast.makeText(context, "Удаляем ярлык: '$displayName'", Toast.LENGTH_LONG).show()
-    
-    val shortcutIntent = Intent().apply {
-        component = ComponentName(context.packageName, "${context.packageName}.ShortcutActivity")
-        action = "RUN_SCRIPT"
-        putExtra("script_path", scriptPath)
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-    }
-    
-    val removeIntent = Intent("com.android.launcher.action.UNINSTALL_SHORTCUT").apply {
-        putExtra(Intent.EXTRA_SHORTCUT_NAME, displayName)
-        putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
-    }
-    
-    context.sendBroadcast(removeIntent)
-    IniHelper.updateScriptConfig(scriptName, config.copy(hasShortcut = false))
-    
-    // Подтверждение что команда отправлена
-    Toast.makeText(context, "Команда удаления отправлена в систему", Toast.LENGTH_SHORT).show()
+    android.app.AlertDialog.Builder(context)
+        .setTitle("Удаление ярлыка")
+        .setMessage("Android 7 не позволяет программно удалять ярлыки. Удалите ярлык '$displayName' с рабочего стола вручную.")
+        .setPositiveButton("Я удалил") { _, _ ->
+            IniHelper.updateScriptConfig(scriptName, config.copy(hasShortcut = false))
+            Toast.makeText(context, "Отмечено как удаленный", Toast.LENGTH_SHORT).show()
+        }
+        .setNegativeButton("Отменить", null)
+        .show()
+}
+
+fun showShortcutUpdateDialog(context: Context, scriptName: String, scriptPath: String, oldConfig: ScriptConfig, newConfig: ScriptConfig) {
+    android.app.AlertDialog.Builder(context)
+        .setTitle("Обновить ярлык?")
+        .setMessage("Имя или иконка изменились. Удалите старый ярлык '${oldConfig.name}' вручную с рабочего стола и создайте новый?")
+        .setPositiveButton("Да, создать новый") { _, _ ->
+            createShortcut(context, scriptName, scriptPath, newConfig.icon)
+            IniHelper.updateScriptConfig(scriptName, newConfig)
+        }
+        .setNegativeButton("Нет, только настройки") { _, _ ->
+            IniHelper.updateScriptConfig(scriptName, newConfig)
+        }
+        .show()
 }
 
 
-    
-    fun recreateShortcut(context: Context, scriptName: String, scriptPath: String, oldConfig: ScriptConfig, newConfig: ScriptConfig) {
-        // Удаляем старый
-        deleteShortcut(context, scriptName, scriptPath)
-        
-        // Небольшая задержка
-        android.os.Handler().postDelayed({
-            // Создаем новый с новыми параметрами
-            createShortcut(context, scriptName, scriptPath, newConfig.icon)
-        }, 500)
-    }
 }
