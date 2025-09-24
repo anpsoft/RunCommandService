@@ -18,6 +18,7 @@ cat << EOF > app/src/main/AndroidManifest.xml
             android:name=".MainActivity"
             android:exported="true"
             android:enabled="$MAIN_ENABLED"
+            android:screenOrientation="portrait"
             android:theme="@android:style/Theme.DeviceDefault.Light">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -27,11 +28,13 @@ cat << EOF > app/src/main/AndroidManifest.xml
         <activity
             android:name=".ScriptSettingsActivity"
             android:exported="false"
+            android:screenOrientation="portrait"
             android:theme="@android:style/Theme.DeviceDefault.Light" />
         <activity
             android:name=".ShortcutActivity"
             android:exported="true"
             android:enabled="$SHORTCUT_ENABLED"
+            android:screenOrientation="portrait"
             android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <intent-filter>
                 <action android:name="android.intent.action.CREATE_SHORTCUT" />
@@ -42,14 +45,30 @@ cat << EOF > app/src/main/AndroidManifest.xml
             android:name=".SilentActivity"
             android:exported="false"
             android:enabled="$SILENT_ENABLED"
+            android:screenOrientation="portrait"
             android:theme="@android:style/Theme.NoDisplay" />
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.DeviceDefault.Light" />
+        <activity
+            android:name=".InstructionsActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.DeviceDefault.Light" />
+        <activity
+            android:name=".AboutActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.DeviceDefault.Light" />
     </application>
 </manifest>
 EOF
 # Копирование XML из templates/layout/
 if [ -d "templates/layout" ]; then
     for xml_file in $(find templates/layout -name "*.xml"); do
-    xml_name=$(basename "$xml_file")
+        xml_name=$(basename "$xml_file")
         cp "$xml_file" "app/src/main/res/layout/$xml_name"
         echo "✅ Копирован: $xml_name в layout"
     done

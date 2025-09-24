@@ -25,26 +25,26 @@ object IniHelper {
 
     fun getScriptsDir(context: Context): String {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        val iniValue = ini["settings"]?.get("scripts_dir", "/sdcard/MyScripts")
-        if (iniValue != null && iniValue != "") {
+        val iniValue = ini["settings"]?.get("scripts_dir") ?: "/sdcard/MyScripts"
+        if (iniValue != "/sdcard/MyScripts" && iniValue.isNotEmpty()) {
             prefs.edit().putString("scripts_dir", iniValue).apply()
             return iniValue
         }
         val prefValue = prefs.getString("scripts_dir", "/sdcard/MyScripts") ?: "/sdcard/MyScripts"
-        ini["settings"]?.put("scripts_dir", prefValue) ?: ini.add("settings").put("scripts_dir", prefValue)
+        ini.add("settings")["scripts_dir"] = prefValue
         save()
         return prefValue
     }
 
     fun getIconsDir(context: Context): String {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        val iniValue = ini["settings"]?.get("icons_dir", "/sdcard/MyScripts/icons")
-        if (iniValue != null && iniValue != "") {
+        val iniValue = ini["settings"]?.get("icons_dir") ?: "/sdcard/MyScripts/icons"
+        if (iniValue != "/sdcard/MyScripts/icons" && iniValue.isNotEmpty()) {
             prefs.edit().putString("icons_dir", iniValue).apply()
             return iniValue
         }
         val prefValue = prefs.getString("icons_dir", "/sdcard/MyScripts/icons") ?: "/sdcard/MyScripts/icons"
-        ini["settings"]?.put("icons_dir", prefValue) ?: ini.add("settings").put("icons_dir", prefValue)
+        ini.add("settings")["icons_dir"] = prefValue
         save()
         return prefValue
     }
@@ -52,11 +52,9 @@ object IniHelper {
     fun updateSettings(context: Context, scriptsDir: String, iconsDir: String) {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         prefs.edit().putString("scripts_dir", scriptsDir).putString("icons_dir", iconsDir).apply()
-        ini["settings"]?.put("scripts_dir", scriptsDir)?.put("icons_dir", iconsDir)
-            ?: ini.add("settings").apply {
-                put("scripts_dir", scriptsDir)
-                put("icons_dir", iconsDir)
-            }
+        val section = ini.add("settings")
+        section["scripts_dir"] = scriptsDir
+        section["icons_dir"] = iconsDir
         save()
     }
 
@@ -107,7 +105,7 @@ object IniHelper {
         
         val sectionsToRemove = mutableListOf<String>()
         for (sectionName in ini.keys) {
-            if (!existingFiles.contains(sectionName)) {
+            if (!existingFiles.contains(sectionName) && sectionName != "settings") {
                 sectionsToRemove.add(sectionName)
             }
         }
@@ -118,7 +116,7 @@ object IniHelper {
         }
     }
 
-    fun createShortcutsForExisting(context: Context) {
+fun createShortcutsForExisting(context: Context) {
         for (sectionName in ini.keys) {
             if (sectionName == "settings") continue
             val config = getScriptConfig(sectionName)
