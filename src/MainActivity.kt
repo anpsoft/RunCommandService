@@ -4,11 +4,8 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
 import android.view.Gravity
-import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -27,27 +24,30 @@ class MainActivity : Activity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        IniHelper.init(this)
         
+        if (hasStoragePermission()) {
+            setupUI()
+            IniHelper.init(this)
+            checkFirstRun()
+            updateScriptList()
+        } else {
+            requestPermissions()
+        }
+    }
+    
+    override fun onResume() {
+        super.onResume()
         
-        // Запрос прав сразу, но НЕ лезем в файлы
-        requestPermissions()
-        
+        if (hasStoragePermission()) {
+            updateScriptList()
+        }
+    }
+    
+    private fun setupUI() {
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(16, 16, 16, 16)
         }
-        
-        // Добавление меню настроек
-        // В layout, добавить ImageButton для настроек
-        val settingsButton = android.widget.ImageButton(this).apply {
-            setImageResource(android.R.drawable.ic_menu_preferences)
-            layoutParams = android.widget.LinearLayout.LayoutParams(48.dp, 48.dp).apply {
-                gravity = Gravity.END or Gravity.TOP
-            }
-            setOnClickListener { showSettingsMenu() }
-        }
-        layout.addView(settingsButton, 0) // Сверху справа, но LinearLayout - подкорректировать
         
         val createShortcutButton = Button(this).apply {
             text = "Создать ссылк"
@@ -67,7 +67,7 @@ class MainActivity : Activity() {
             setOnClickListener {
                 if (!TermuxHelper.hasPermission(this@MainActivity)) {
                     showPermissionDialog()
-                    } else {
+                } else {
                     TermuxHelper.sendCommand(this@MainActivity, "/sdcard/MyScripts/UpdateWDS.sh")
                 }
             }
@@ -121,7 +121,7 @@ class MainActivity : Activity() {
         
         val headerTest = TextView(this).apply {
             text = "▶️"
-            layoutParams = LinearLayout.LayoutParams(60.dp, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            layoutParams = LinearLayout.LayoutParams(60.dp, LinearLayout.LayoutParams.WRAP_Content).apply {
                 width = 60.dp
             }
             gravity = Gravity.CENTER
@@ -157,21 +157,21 @@ class MainActivity : Activity() {
         }
         val refreshButton = Button(this).apply {
             text = "Обновить"
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            setOnClickListener { if (hasStoragePermission()) updateScriptList() }
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_Content, 1f)
+            setOnClickListener { updateScriptList() }
         }
         val createScriptButton = Button(this).apply {
             text = "Новый"
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            setOnClickListener { if (hasStoragePermission()) createNewScript() }
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_Content, 1f)
+            setOnClickListener { createNewScript() }
         }
         val showAllButton = Button(this).apply {
             text = "Все"
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_Content, 1f)
             setOnClickListener {
                 showAllScripts = !showAllScripts
                 text = if (showAllScripts) "Активные" else "Все"
-                if (hasStoragePermission()) updateScriptList()
+                updateScriptList()
             }
         }
         bottomButtons.addView(refreshButton)
@@ -181,42 +181,6 @@ class MainActivity : Activity() {
         
         setContentView(layout)
     }
-    
-    
-private fun showSettingsMenu() {
-    val items = arrayOf("Настройки", "Инструкция", "О программе")
-    AlertDialog.Builder(this)
-        .setTitle("Меню")
-        .setItems(items) { _, which ->
-            when (which) {
-                0 -> startActivity(Intent(this, SettingsActivity::class.java))
-                1 -> startActivity(Intent(this, InstructionsActivity::class.java))
-                2 -> startActivity(Intent(this, AboutActivity::class.java))
-            }
-        }
-        .show()
-}
-    
-    override fun onResume() {
-        super.onResume()
-        
-        if (hasStoragePermission()) {
-            checkFirstRun()
-            updateScriptList()
-        }
-        
-    }
-    
-    private fun checkFirstRun() {
-        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
-        if (prefs.getBoolean("first_run", true)) {
-            if (!hasStoragePermission()) return
-            IniHelper.cleanupOrphanedConfigs(this)
-            IniHelper.createShortcutsForExisting(this)
-            prefs.edit().putBoolean("first_run", false).apply()
-        }
-    }
-    
     
     private fun requestPermissions() {
         val permissions = arrayOf(
@@ -239,21 +203,18 @@ private fun showSettingsMenu() {
     }
     
     
-private fun updateScriptList() {
-    val scriptsDir = IniHelper.getScriptsDir(this)
-    val dirFile = File(scriptsDir)
-    dirFile.mkdirs()
-    val iconsDir = File(IniHelper.getIconsDir(this))
-    iconsDir.mkdirs()
-    
-    IniHelper.cleanupOrphanedConfigs(this)
-    
-    val scripts = dirFile.listFiles { _, name -> name.endsWith(".sh") }?.map { file ->
-        Script(file.nameWithoutExtension, "$scriptsDir/${file.name}")
-    }?.filter { showAllScripts || IniHelper.getScriptConfig(it.name).isActive } ?: emptyList()
-    adapter.updateScripts(scripts)
-}
-    
+    private fun updateScriptList() {
+        val scriptsDir = File(Environment.getExternalStorageDirectory(), "MyScripts")
+        scriptsDir.mkdirs()
+        File(scriptsDir, "icons").mkdirs()
+        
+        IniHelper.cleanupOrphanedConfigs()
+        
+        val scripts = scriptsDir.listFiles { _, name -> name.endsWith(".sh") }?.map { file ->
+            Script(file.nameWithoutExtension, "/sdcard/MyScripts/${file.name}")
+        }?.filter { showAllScripts || IniHelper.getScriptConfig(it.name).isActive } ?: emptyList()
+        adapter.updateScripts(scripts)
+    }
     
     private fun createNewScript() {
         val editText = EditText(this).apply { hint = "Имя скрипта" }
@@ -272,11 +233,11 @@ private fun updateScriptList() {
                     val chooser = Intent.createChooser(intent, "Открыть редактором")
                     if (chooser.resolveActivity(packageManager) != null) {
                         startActivity(chooser)
-                        } else {
+                    } else {
                         Toast.makeText(this, "Нет редактора", Toast.LENGTH_SHORT).show()
                     }
                     updateScriptList()
-                    } else {
+                } else {
                     Toast.makeText(this, "Файл уже существует", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -290,15 +251,6 @@ private fun updateScriptList() {
             putExtra("script_name", script.name)
         }
         startActivity(intent)
-    }
-    
-    override fun onStart() {
-        super.onStart()
-        if (hasStoragePermission()) {
-            checkFirstRun()
-            updateScriptList()
-        }
-        
     }
     
     private fun onTestRun(script: Script) {
@@ -325,7 +277,7 @@ private fun updateScriptList() {
                 val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                 intent.data = android.net.Uri.parse("package:$packageName")
                 startActivity(intent)
-                } catch (e: Exception) {
+            } catch (e: Exception) {
                 Toast.makeText(this, "Не удалось открыть настройки", Toast.LENGTH_SHORT).show()
             }
         }
@@ -339,15 +291,26 @@ private fun updateScriptList() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         
         if (requestCode == 1 && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-            // Теперь точно есть права — выполняем первый запуск
+            setupUI()
+            IniHelper.init(this)
             checkFirstRun()
             updateScriptList()
-            } else {
+        } else {
             Toast.makeText(this, "Разрешения не даны — приложение не сможет работать полностью", Toast.LENGTH_SHORT).show()
         }
     }
     
     
+    private fun checkFirstRun() {
+        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+        if (prefs.getBoolean("first_run", true)) {
+            IniHelper.cleanupOrphanedConfigs()
+            IniHelper.createShortcutsForExisting(this)
+            prefs.edit().putBoolean("first_run", false).apply()
+        }
+    }
+    
+    
     private val Int.dp: Int
-    get() = (this * resources.displayMetrics.density).toInt()
+        get() = (this * resources.displayMetrics.density).toInt()
 }
