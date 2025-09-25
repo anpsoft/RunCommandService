@@ -22,13 +22,21 @@ class MainActivity : Activity() {
     private lateinit var adapter: ScriptAdapter
     private var showAllScripts = false
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setupUI()
+override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    
+    try {
         IniHelper.init(this)
+        setupUI()
         checkFirstRun()
         updateScriptList()
+    } catch (e: Exception) {
+        android.util.Log.e("MainActivity", "onCreate error: ${e.message}")
+        Toast.makeText(this, "Ошибка запуска: ${e.message}", Toast.LENGTH_LONG).show()
+        // Показываем базовый UI даже при ошибке
+        setupUI()
     }
+}
 
     override fun onResume() {
         super.onResume()

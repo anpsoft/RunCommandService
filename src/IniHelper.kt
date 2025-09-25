@@ -9,14 +9,22 @@ object IniHelper {
     private lateinit var iniFile: File
     private val ini = Ini()
 
-    fun init(context: Context) {
-        iniFile = getSettingsFile(context)
-        iniFile.parentFile?.mkdirs()
-        if (iniFile.exists()) {
+fun init(context: Context) {
+    val scriptsDir = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        .getString("scripts_dir", "/sdcard/MyScripts") ?: "/sdcard/MyScripts"
+    
+    iniFile = File(scriptsDir, "scripts.ini")
+    iniFile.parentFile?.mkdirs()
+    
+    if (iniFile.exists()) {
+        try {
             ini.load(iniFile)
+        } catch (e: Exception) {
+            // Если файл поврежден, создаем новый
         }
-        syncSettingsWithPrefs(context)
     }
+    syncSettingsWithPrefs(context)
+}
 
     private fun getSettingsFile(context: Context): File {
         val scriptsDir = getScriptsDir(context)
@@ -63,16 +71,25 @@ object IniHelper {
         getIconsDir(context)
     }
 
-    fun getScriptConfig(scriptName: String): ScriptConfig {
-        val section = ini[scriptName] ?: return ScriptConfig()
-        return ScriptConfig(
-            name = section.get("name", ""),
-            description = section.get("description", ""),
-            icon = section.get("icon", ""),
-            isActive = section.get("is_active", "true").toBoolean(),
-            hasShortcut = section.get("has_shortcut", "false").toBoolean()
-        )
+fun getScriptConfig(scriptName: String): ScriptConfig {
+    return try {
+        val section = ini[scriptName]
+        if (section != null) {
+            ScriptConfig(
+                name = section.get("name", ""),
+                description = section.get("description", ""),
+                icon = section.get("icon", ""),
+                isActive = section.get("is_active", "true").toBoolean(),
+                hasShortcut = section.get("has_shortcut", "false").toBoolean()
+            )
+        } else {
+            // Для новых скриптов - активны по умолчанию
+            ScriptConfig(isActive = true)
+        }
+    } catch (e: Exception) {
+        ScriptConfig(isActive = true)
     }
+}
 
     fun updateScriptConfig(scriptName: String, config: ScriptConfig) {
         val section = ini[scriptName] ?: ini.add(scriptName)
