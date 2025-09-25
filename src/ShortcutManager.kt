@@ -78,4 +78,24 @@ fun showShortcutUpdateDialog(context: Context, scriptName: String, scriptPath: S
 }
 
 
+fun deleteShortcut(context: Context, scriptName: String, scriptPath: String) {
+    try {
+        val shortcutIntent = Intent().apply {
+            component = ComponentName(context.packageName, "${context.packageName}.ShortcutActivity")
+            action = "RUN_SCRIPT"
+            putExtra("script_path", scriptPath)
+        }
+        
+        val removeIntent = Intent("com.android.launcher.action.UNINSTALL_SHORTCUT").apply {
+            putExtra(Intent.EXTRA_SHORTCUT_NAME, scriptName)
+            putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
+        }
+        
+        context.sendBroadcast(removeIntent)
+        Toast.makeText(context, "Команда удаления отправлена", Toast.LENGTH_SHORT).show()
+    } catch (e: Exception) {
+        Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
+    }
+}
+
 }
