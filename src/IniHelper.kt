@@ -24,20 +24,22 @@ object IniHelper {
             ini.load(iniFile)
         }
         
-        val iniScripts = ini["settings"]?.get("scripts_dir")
+        val section = ini["settings"] ?: ini.add("settings")
+        
+        val iniScripts = section.get("scripts_dir")
         if (!iniScripts.isNullOrEmpty() && iniScripts != defaultScriptsDir) {
             scriptsDir = iniScripts
             prefs.edit().putString("scripts_dir", scriptsDir).apply()
         } else {
-            ini.add("settings")["scripts_dir"] = scriptsDir
+            section.put("scripts_dir", scriptsDir)
         }
         
-        val iniIcons = ini["settings"]?.get("icons_dir")
+        val iniIcons = section.get("icons_dir")
         if (!iniIcons.isNullOrEmpty() && iniIcons != defaultIconsDir) {
             iconsDir = iniIcons
             prefs.edit().putString("icons_dir", iconsDir).apply()
         } else {
-            ini.add("settings")["icons_dir"] = iconsDir
+            section.put("icons_dir", iconsDir)
         }
         
         save()
@@ -50,7 +52,8 @@ object IniHelper {
 
     fun getScriptsDir(context: Context): String {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        val iniValue = ini["settings"]?.get("scripts_dir")
+        val section = ini["settings"]
+        val iniValue = section?.get("scripts_dir")
         if (!iniValue.isNullOrEmpty()) {
             return iniValue
         }
@@ -59,7 +62,8 @@ object IniHelper {
 
     fun getIconsDir(context: Context): String {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        val iniValue = ini["settings"]?.get("icons_dir")
+        val section = ini["settings"]
+        val iniValue = section?.get("icons_dir")
         if (!iniValue.isNullOrEmpty()) {
             return iniValue
         }
@@ -69,9 +73,9 @@ object IniHelper {
     fun updateSettings(context: Context, scriptsDir: String, iconsDir: String) {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         prefs.edit().putString("scripts_dir", scriptsDir).putString("icons_dir", iconsDir).apply()
-        val section = ini.add("settings")
-        section["scripts_dir"] = scriptsDir
-        section["icons_dir"] = iconsDir
+        val section = ini["settings"] ?: ini.add("settings")
+        section.put("scripts_dir", scriptsDir)
+        section.put("icons_dir", iconsDir)
         save()
         iniFile = File(scriptsDir, "scripts.ini")
     }
@@ -97,11 +101,11 @@ object IniHelper {
 
     fun updateScriptConfig(scriptName: String, config: ScriptConfig) {
         val section = ini[scriptName] ?: ini.add(scriptName)
-        section["name"] = config.name
-        section["description"] = config.description
-        section["icon"] = config.icon
-        section["is_active"] = config.isActive.toString()
-        section["has_shortcut"] = config.hasShortcut.toString()
+        section.put("name", config.name)
+        section.put("description", config.description)
+        section.put("icon", config.icon)
+        section.put("is_active", config.isActive.toString())
+        section.put("has_shortcut", config.hasShortcut.toString())
         save()
     }
 
