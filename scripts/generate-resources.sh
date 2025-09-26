@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Читаем значения из ini
-PACKAGE=$(grep "^package=" build.ini | cut -d'=' -f2)
-APP_NAME=$(grep "^appName=" build.ini | cut -d'=' -f2)
+PACKAGE=$(grep "^package=" app.ini| cut -d'=' -f2)
+APP_NAME=$(grep "^appName=" app.ini| cut -d'=' -f2)
 
 # Проверяем, что значения существуют
 if [ -z "$PACKAGE" ] || [ -z "$APP_NAME" ]; then
@@ -33,9 +33,9 @@ EOF
 
 # Добавляем активности из ini
 for activity in PermissionActivity MainActivity ScriptSettingsActivity AboutActivity InstructionsActivity SettingsActivity ShortcutActivity SilentActivity; do
-    enabled=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^enabled=/{print \$0}" build.ini | cut -d'=' -f2)
-    package=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^package=/{print \$0}" build.ini | cut -d'=' -f2)
-    theme=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^theme=/{print \$0}" build.ini | cut -d'=' -f2)
+    enabled=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^enabled=/{print \$0}" app.ini| cut -d'=' -f2)
+    package=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^package=/{print \$0}" app.ini| cut -d'=' -f2)
+    theme=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^theme=/{print \$0}" app.ini| cut -d'=' -f2)
     enabled=${enabled:-"false"}
     package=${package:-"$PACKAGE"}
     theme=${theme:-"DeviceDefault.Light"}

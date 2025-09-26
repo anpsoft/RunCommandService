@@ -10,13 +10,13 @@ for kotlin_file in src/*.kt; do
 done
 
 # Проверка build.ini
-if [ ! -f "build.ini" ]; then
-    echo "❌ Ошибка: build.ini не найден"
+if [ ! -f "app.ini" ]; then
+    echo "❌ Ошибка: app.ini не найден"
     exit 1
 fi
 
 # Читаем основной package
-PACKAGE=$(grep "^package=" build.ini | cut -d'=' -f2)
+PACKAGE=$(grep "^package=" app.ini| cut -d'=' -f2)
 if [ -z "$PACKAGE" ]; then
     echo "❌ Ошибка: package отсутствует в build.ini"
     exit 1
@@ -41,8 +41,8 @@ for kotlin_file in src/*.kt; do
     [ -f "$kotlin_file" ] || continue
     base_name=$(basename "$kotlin_file")
     activity_name=${base_name%.kt}
-    # Читаем package из build.ini для активности
-    package=$(awk "/^\[$activity_name\]/{flag=1; next} /^\[/{flag=0} flag && /^package=/{print \$0}" build.ini | cut -d'=' -f2)
+    # Читаем package из app.iniдля активности
+    package=$(awk "/^\[$activity_name\]/{flag=1; next} /^\[/{flag=0} flag && /^package=/{print \$0}" app.ini| cut -d'=' -f2)
     package=${package:-"$PACKAGE"}  # Дефолт - основной package
     target_dir="app/src/main/java/$(echo "$package" | tr '.' '/')"
     mkdir -p "$target_dir"
