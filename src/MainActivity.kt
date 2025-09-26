@@ -15,6 +15,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import android.view.MenuItem // Добавляем импорт
 import java.io.File
 
 class MainActivity : Activity() {
@@ -322,6 +323,8 @@ class MainActivity : Activity() {
         return true
     }
     
+
+
 override fun onOptionsItemSelected(item: MenuItem): Boolean {
     return when (item.itemId) {
         1 -> {
@@ -356,7 +359,7 @@ override fun onOptionsItemSelected(item: MenuItem): Boolean {
         }
         else -> super.onOptionsItemSelected(item)
     }
-}  
+}
     
     private val Int.dp: Int
     get() = (this * resources.displayMetrics.density).toInt()
