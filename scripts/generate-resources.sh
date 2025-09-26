@@ -1,24 +1,18 @@
 #!/bin/bash
 
-# Читаем значения из ini (исправленное чтение)
+# Читаем значения из ini
 PACKAGE=$(grep "^package=" build.ini | cut -d'=' -f2)
 APP_NAME=$(grep "^appName=" build.ini | cut -d'=' -f2)
 
-# Читаем enabled для активити
-SHORTCUT_ENABLED=$(awk '/^\[ShortcutActivity\]/{flag=1; next} /^\[/{flag=0} flag && /^enabled=/{print $0}' build.ini | cut -d'=' -f2)
-SILENT_ENABLED=$(awk '/^\[SilentActivity\]/{flag=1; next} /^\[/{flag=0} flag && /^enabled=/{print $0}' build.ini | cut -d'=' -f2)
-
-# Устанавливаем дефолтные значения если пусто
-PACKAGE=${PACKAGE:-"com.yourcompany.yourapp5"}
-APP_NAME=${APP_NAME:-"YourApp5"}
-SHORTCUT_ENABLED=${SHORTCUT_ENABLED:-"true"}
-SILENT_ENABLED=${SILENT_ENABLED:-"false"}
+# Проверяем, что значения существуют
+if [ -z "$PACKAGE" ] || [ -z "$APP_NAME" ]; then
+    echo "❌ Ошибка: package или appName отсутствуют в build.ini"
+    exit 1
+fi
 
 echo "📊 Прочитанные значения:"
 echo "PACKAGE=$PACKAGE"
-echo "APP_NAME=$APP_NAME" 
-echo "SHORTCUT_ENABLED=$SHORTCUT_ENABLED"
-echo "SILENT_ENABLED=$SILENT_ENABLED"
+echo "APP_NAME=$APP_NAME"
 
 # Начинаем генерацию манифеста
 cat << EOF > app/src/main/AndroidManifest.xml
@@ -35,58 +29,75 @@ package="$PACKAGE">
         android:icon="@mipmap/ic_launcher"
         android:label="$APP_NAME"
         android:theme="@android:style/Theme.DeviceDefault.Light">
-        <activity
-            android:name=".PermissionActivity"
-            android:exported="true"
-            android:enabled="true"
-            android:theme="@android:style/Theme.DeviceDefault.Light">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".MainActivity"
-            android:exported="false"
-            android:enabled="true"
-            android:theme="@android:style/Theme.DeviceDefault.Light" />
-        <activity
-            android:name=".ScriptSettingsActivity"
-            android:exported="false"
-            android:theme="@android:style/Theme.DeviceDefault.Light" />
 EOF
 
-# Автоматически добавляем все активити из ini если enabled=true
-for activity in AboutActivity InstructionsActivity SettingsActivity; do
+# Добавляем активности из ini
+for activity in PermissionActivity MainActivity ScriptSettingsActivity AboutActivity InstructionsActivity SettingsActivity ShortcutActivity SilentActivity; do
     enabled=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^enabled=/{print \$0}" build.ini | cut -d'=' -f2)
+    package=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^package=/{print \$0}" build.ini | cut -d'=' -f2)
+    theme=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^theme=/{print \$0}" build.ini | cut -d'=' -f2)
+    enabled=${enabled:-"false"}
+    package=${package:-"$PACKAGE"}
+    theme=${theme:-"DeviceDefault.Light"}
+    echo "🔍 Проверяем $activity: enabled=$enabled, package=$package, theme=$theme"
     if [ "$enabled" = "true" ]; then
-        echo "        <activity" >> app/src/main/AndroidManifest.xml
-        echo "            android:name=\".$activity\"" >> app/src/main/AndroidManifest.xml
-        echo "            android:exported=\"false\"" >> app/src/main/AndroidManifest.xml
-        echo "            android:theme=\"@android:style/Theme.DeviceDefault.Light\" />" >> app/src/main/AndroidManifest.xml
-        echo "✅ Добавлена активити: $activity"
-    else
-        echo "❌ Пропущена активити: $activity (enabled=$enabled)"
-    fi
-done
-
-# Добавляем остальные активити
-cat << EOF >> app/src/main/AndroidManifest.xml
+        if [ "$activity" = "ShortcutActivity" ]; then
+            if [ "$package" = "$PACKAGE" ]; then
+                activity_name=".ShortcutActivity"
+            else
+                activity_name="$package.ShortcutActivity"
+            fi
+            cat << EOF >> app/src/main/AndroidManifest.xml
         <activity
-            android:name=".ShortcutActivity"
+            android:name="$activity_name"
             android:exported="true"
-            android:enabled="$SHORTCUT_ENABLED"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            android:enabled="$enabled"
+            android:theme="@android:style/Theme.$theme">
             <intent-filter>
                 <action android:name="android.intent.action.CREATE_SHORTCUT" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+EOF
+        elif [ "$activity" = "PermissionActivity" ]; then
+            if [ "$package" = "$PACKAGE" ]; then
+                activity_name=".PermissionActivity"
+            else
+                activity_name="$package.PermissionActivity"
+            fi
+            cat << EOF >> app/src/main/AndroidManifest.xml
         <activity
-            android:name=".SilentActivity"
+            android:name="$activity_name"
+            android:exported="true"
+            android:enabled="$enabled"
+            android:theme="@android:style/Theme.$theme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+EOF
+        else
+            if [ "$package" = "$PACKAGE" ]; then
+                activity_name=".$activity"
+            else
+                activity_name="$package.$activity"
+            fi
+            cat << EOF >> app/src/main/AndroidManifest.xml
+        <activity
+            android:name="$activity_name"
             android:exported="false"
-            android:enabled="$SILENT_ENABLED"
-            android:theme="@android:style/Theme.NoDisplay" />
+            android:enabled="$enabled"
+            android:theme="@android:style/Theme.$theme" />
+EOF
+        fi
+        echo "✅ Добавлена активити: $activity ($activity_name)"
+    else
+        echo "❌ Пропущена активити: $activity (enabled=$enabled)"
+    fi
+done
+
+cat << EOF >> app/src/main/AndroidManifest.xml
     </application>
 </manifest>
 EOF
@@ -94,17 +105,16 @@ EOF
 # Копирование XML из templates/layout/
 if [ -d "templates/layout" ]; then
     for xml_file in $(find templates/layout -name "*.xml"); do
-    xml_name=$(basename "$xml_file")
+        xml_name=$(basename "$xml_file")
         cp "$xml_file" "app/src/main/res/layout/$xml_name"
         echo "✅ Копирован: $xml_name в layout"
     done
 fi
 echo "✅ Ресурсы сгенерированы"
 
-# Выводим сгенерированный манифест в лог для проверки  
+# Выводим сгенерированный манифест в лог для проверки
 echo "📄 Сгенерированный AndroidManifest.xml:"
 echo "=================================="
 cat app/src/main/AndroidManifest.xml
 echo "=================================="
 echo "✅ AndroidManifest.xml создан успешно"
-echo "=================================="

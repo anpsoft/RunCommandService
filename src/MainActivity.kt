@@ -323,12 +323,11 @@ class MainActivity : Activity() {
     }
     
     override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
-        return when (item.itemId) {
+        val packageName = packageName
+        when (item.itemId) {
             1 -> {
                 try {
-                    // Используй правильный package name
-                    val intent = Intent()
-                    intent.setClassName(packageName, "$packageName.AboutActivity")
+                    val intent = Intent(this, Class.forName("$packageName.AboutActivity"))
                     startActivity(intent)
                     } catch (e: Exception) {
                     Toast.makeText(this, "AboutActivity не найдена: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -337,8 +336,7 @@ class MainActivity : Activity() {
             }
             2 -> {
                 try {
-                    val intent = Intent()
-                    intent.setClassName(packageName, "$packageName.InstructionsActivity")
+                    val intent = Intent(this, Class.forName("$packageName.InstructionsActivity"))
                     startActivity(intent)
                     } catch (e: Exception) {
                     Toast.makeText(this, "InstructionsActivity не найдена: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -347,8 +345,7 @@ class MainActivity : Activity() {
             }
             3 -> {
                 try {
-                    val intent = Intent()
-                    intent.setClassName(packageName, "$packageName.SettingsActivity")
+                    val intent = Intent(this, Class.forName("$packageName.SettingsActivity"))
                     startActivity(intent)
                     } catch (e: Exception) {
                     Toast.makeText(this, "SettingsActivity не найдена: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -357,8 +354,7 @@ class MainActivity : Activity() {
             }
             else -> super.onOptionsItemSelected(item)
         }
-    }
-    
+    }    
     
     private val Int.dp: Int
     get() = (this * resources.displayMetrics.density).toInt()

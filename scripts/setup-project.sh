@@ -9,9 +9,21 @@ for kotlin_file in src/*.kt; do
     [ -f "$kotlin_file" ] && echo "✅ Найден: $kotlin_file"
 done
 
+# Проверка build.ini
+if [ ! -f "build.ini" ]; then
+    echo "❌ Ошибка: build.ini не найден"
+    exit 1
+fi
+
+# Читаем основной package
+PACKAGE=$(grep "^package=" build.ini | cut -d'=' -f2)
+if [ -z "$PACKAGE" ]; then
+    echo "❌ Ошибка: package отсутствует в build.ini"
+    exit 1
+fi
+
 # Создание директорий
 mkdir -p app
-
 [ -d "app" ] || { echo "❌ Не удалось создать папку app/"; exit 1; }
 JAVA_PATH=$(echo "$PACKAGE" | tr '.' '/')
 mkdir -p app/src/main/java/$JAVA_PATH app/src/main/res/{values,layout,mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}} app/src/main/assets
@@ -28,13 +40,19 @@ keytool -genkeypair -v -keystore app/debug.keystore -alias androiddebugkey \
 for kotlin_file in src/*.kt; do
     [ -f "$kotlin_file" ] || continue
     base_name=$(basename "$kotlin_file")
+    activity_name=${base_name%.kt}
+    # Читаем package из build.ini для активности
+    package=$(awk "/^\[$activity_name\]/{flag=1; next} /^\[/{flag=0} flag && /^package=/{print \$0}" build.ini | cut -d'=' -f2)
+    package=${package:-"$PACKAGE"}  # Дефолт - основной package
+    target_dir="app/src/main/java/$(echo "$package" | tr '.' '/')"
+    mkdir -p "$target_dir"
     cp "$kotlin_file" "/tmp/${base_name}.tmp"
     sed -i '/^package /d' "/tmp/${base_name}.tmp"
     sed -i '/./,$!d' "/tmp/${base_name}.tmp"
-    cp "/tmp/${base_name}.tmp" "app/src/main/java/$JAVA_PATH/$base_name"
-    sed -i "1i package $PACKAGE" "app/src/main/java/$JAVA_PATH/$base_name"
+    echo "package $package" > "$target_dir/$base_name"
+    cat "/tmp/${base_name}.tmp" >> "$target_dir/$base_name"
     rm "/tmp/${base_name}.tmp"
-    echo "✅ Очищен: $base_name"
+    echo "✅ Очищен и скопирован: $base_name в $target_dir с package=$package"
 done
 
 # Копирование иконок
