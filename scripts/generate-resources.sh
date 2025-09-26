@@ -1,10 +1,24 @@
 #!/bin/bash
 
-# Читаем значения из ini
-PACKAGE=$(grep "package=" build.ini | cut -d'=' -f2)
-APP_NAME=$(grep "appName=" build.ini | cut -d'=' -f2)
-SHORTCUT_ENABLED=$(grep -A5 "\[ShortcutActivity\]" build.ini | grep "enabled=" | cut -d'=' -f2)
-SILENT_ENABLED=$(grep -A5 "\[SilentActivity\]" build.ini | grep "enabled=" | cut -d'=' -f2)
+# Читаем значения из ini (исправленное чтение)
+PACKAGE=$(grep "^package=" build.ini | cut -d'=' -f2)
+APP_NAME=$(grep "^appName=" build.ini | cut -d'=' -f2)
+
+# Читаем enabled для активити
+SHORTCUT_ENABLED=$(awk '/^\[ShortcutActivity\]/{flag=1; next} /^\[/{flag=0} flag && /^enabled=/{print $0}' build.ini | cut -d'=' -f2)
+SILENT_ENABLED=$(awk '/^\[SilentActivity\]/{flag=1; next} /^\[/{flag=0} flag && /^enabled=/{print $0}' build.ini | cut -d'=' -f2)
+
+# Устанавливаем дефолтные значения если пусто
+PACKAGE=${PACKAGE:-"com.yourcompany.yourapp5"}
+APP_NAME=${APP_NAME:-"YourApp5"}
+SHORTCUT_ENABLED=${SHORTCUT_ENABLED:-"true"}
+SILENT_ENABLED=${SILENT_ENABLED:-"false"}
+
+echo "📊 Прочитанные значения:"
+echo "PACKAGE=$PACKAGE"
+echo "APP_NAME=$APP_NAME" 
+echo "SHORTCUT_ENABLED=$SHORTCUT_ENABLED"
+echo "SILENT_ENABLED=$SILENT_ENABLED"
 
 # Начинаем генерацию манифеста
 cat << EOF > app/src/main/AndroidManifest.xml
@@ -44,12 +58,15 @@ EOF
 
 # Автоматически добавляем все активити из ini если enabled=true
 for activity in AboutActivity InstructionsActivity SettingsActivity; do
-    enabled=$(grep -A5 "\[$activity\]" build.ini 2>/dev/null | grep "enabled=" | cut -d'=' -f2)
+    enabled=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^enabled=/{print \$0}" build.ini | cut -d'=' -f2)
     if [ "$enabled" = "true" ]; then
         echo "        <activity" >> app/src/main/AndroidManifest.xml
         echo "            android:name=\".$activity\"" >> app/src/main/AndroidManifest.xml
         echo "            android:exported=\"false\"" >> app/src/main/AndroidManifest.xml
         echo "            android:theme=\"@android:style/Theme.DeviceDefault.Light\" />" >> app/src/main/AndroidManifest.xml
+        echo "✅ Добавлена активити: $activity"
+    else
+        echo "❌ Пропущена активити: $activity (enabled=$enabled)"
     fi
 done
 
@@ -87,7 +104,7 @@ echo "✅ Ресурсы сгенерированы"
 # Выводим сгенерированный манифест в лог для проверки  
 echo "📄 Сгенерированный AndroidManifest.xml:"
 echo "=================================="
-cat -n app/src/main/AndroidManifest.xml
+cat app/src/main/AndroidManifest.xml
 echo "=================================="
 echo "✅ AndroidManifest.xml создан успешно"
 echo "=================================="
