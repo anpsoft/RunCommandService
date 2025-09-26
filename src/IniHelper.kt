@@ -10,48 +10,43 @@ object IniHelper {
     private val ini = Ini()
 
 fun init(context: Context) {
-    // Сначала определяем путь БЕЗ записи в ini
     val scriptsDir = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         .getString("scripts_dir", "/sdcard/MyScripts") ?: "/sdcard/MyScripts"
     
     iniFile = File(scriptsDir, "scripts.ini")
     iniFile.parentFile?.mkdirs()
     
-    // Загружаем существующий ini если есть
     if (iniFile.exists()) {
         try {
             ini.load(iniFile)
         } catch (e: Exception) {
-            // Файл поврежден - будем пересоздавать
+            // Если файл поврежден, создаем новый
         }
     }
-    
-    // Теперь синхронизируем настройки (с записью)
     syncSettingsWithPrefs(context)
 }
 
 private fun syncSettingsWithPrefs(context: Context) {
-    // Читаем без вызова save() внутри
-    val scriptsDir = readScriptsDir(context)
-    val iconsDir = readIconsDir(context)
+    val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     
-    // Записываем в ini только если что-то изменилось
-    val settingsSection = ini.add("settings")
-    var changed = false
+    // Читаем из ini, если нет - берем из prefs, если нет - дефолт
+    val iniScriptsDir = ini["settings"]?.get("scripts_dir")
+    val iniIconsDir = ini["settings"]?.get("icons_dir")
     
-    if (settingsSection["scripts_dir"] != scriptsDir) {
-        settingsSection["scripts_dir"] = scriptsDir
-        changed = true
-    }
+    val finalScriptsDir = iniScriptsDir ?: prefs.getString("scripts_dir", "/sdcard/MyScripts") ?: "/sdcard/MyScripts"
+    val finalIconsDir = iniIconsDir ?: prefs.getString("icons_dir", "/sdcard/MyScripts/icons") ?: "/sdcard/MyScripts/icons"
     
-    if (settingsSection["icons_dir"] != iconsDir) {
-        settingsSection["icons_dir"] = iconsDir
-        changed = true
-    }
+    // Обновляем prefs
+    prefs.edit()
+        .putString("scripts_dir", finalScriptsDir)
+        .putString("icons_dir", finalIconsDir)
+        .apply()
     
-    if (changed) {
-        save()
-    }
+    // Обновляем ini
+    val section = ini.add("settings")
+    section["scripts_dir"] = finalScriptsDir
+    section["icons_dir"] = finalIconsDir
+    save()
 }
 
 
