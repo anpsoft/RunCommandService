@@ -322,39 +322,41 @@ class MainActivity : Activity() {
         return true
     }
     
-    override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
-        val packageName = packageName
-        when (item.itemId) {
-            1 -> {
-                try {
-                    val intent = Intent(this, Class.forName("$packageName.AboutActivity"))
-                    startActivity(intent)
-                    } catch (e: Exception) {
-                    Toast.makeText(this, "AboutActivity не найдена: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
+override fun onOptionsItemSelected(item: MenuItem): Boolean {
+    return when (item.itemId) {
+        1 -> {
+            try {
+                val intent = Intent(this, AboutActivity::class.java)
+                startActivity(intent)
                 true
+            } catch (e: Exception) {
+                Toast.makeText(this, "AboutActivity не найдена: ${e.message}", Toast.LENGTH_SHORT).show()
+                false
             }
-            2 -> {
-                try {
-                    val intent = Intent(this, Class.forName("$packageName.InstructionsActivity"))
-                    startActivity(intent)
-                    } catch (e: Exception) {
-                    Toast.makeText(this, "InstructionsActivity не найдена: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-                true
-            }
-            3 -> {
-                try {
-                    val intent = Intent(this, Class.forName("$packageName.SettingsActivity"))
-                    startActivity(intent)
-                    } catch (e: Exception) {
-                    Toast.makeText(this, "SettingsActivity не найдена: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
         }
-    }    
+        2 -> {
+            try {
+                val intent = Intent(this, InstructionsActivity::class.java)
+                startActivity(intent)
+                true
+            } catch (e: Exception) {
+                Toast.makeText(this, "InstructionsActivity не найдена: ${e.message}", Toast.LENGTH_SHORT).show()
+                false
+            }
+        }
+        3 -> {
+            try {
+                val intent = Intent(this, SettingsActivity::class.java)
+                startActivity(intent)
+                true
+            } catch (e: Exception) {
+                Toast.makeText(this, "SettingsActivity не найдена: ${e.message}", Toast.LENGTH_SHORT).show()
+                false
+            }
+        }
+        else -> super.onOptionsItemSelected(item)
+    }
+}  
     
     private val Int.dp: Int
     get() = (this * resources.displayMetrics.density).toInt()
