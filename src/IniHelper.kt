@@ -10,21 +10,50 @@ object IniHelper {
     private val ini = Ini()
 
 fun init(context: Context) {
+    // Сначала определяем путь БЕЗ записи в ini
     val scriptsDir = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         .getString("scripts_dir", "/sdcard/MyScripts") ?: "/sdcard/MyScripts"
     
     iniFile = File(scriptsDir, "scripts.ini")
     iniFile.parentFile?.mkdirs()
     
+    // Загружаем существующий ini если есть
     if (iniFile.exists()) {
         try {
             ini.load(iniFile)
         } catch (e: Exception) {
-            // Если файл поврежден, создаем новый
+            // Файл поврежден - будем пересоздавать
         }
     }
+    
+    // Теперь синхронизируем настройки (с записью)
     syncSettingsWithPrefs(context)
 }
+
+private fun syncSettingsWithPrefs(context: Context) {
+    // Читаем без вызова save() внутри
+    val scriptsDir = readScriptsDir(context)
+    val iconsDir = readIconsDir(context)
+    
+    // Записываем в ini только если что-то изменилось
+    val settingsSection = ini.add("settings")
+    var changed = false
+    
+    if (settingsSection["scripts_dir"] != scriptsDir) {
+        settingsSection["scripts_dir"] = scriptsDir
+        changed = true
+    }
+    
+    if (settingsSection["icons_dir"] != iconsDir) {
+        settingsSection["icons_dir"] = iconsDir
+        changed = true
+    }
+    
+    if (changed) {
+        save()
+    }
+}
+
 
     private fun getSettingsFile(context: Context): File {
         val scriptsDir = getScriptsDir(context)
@@ -66,10 +95,7 @@ fun init(context: Context) {
         save()
     }
 
-    private fun syncSettingsWithPrefs(context: Context) {
-        getScriptsDir(context)
-        getIconsDir(context)
-    }
+
 
 fun getScriptConfig(scriptName: String): ScriptConfig {
     return try {
