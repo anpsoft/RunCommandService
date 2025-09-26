@@ -1,0 +1,115 @@
+
+Способ 1: Стандартный метод (может не работать в MIUI)
+
+private void deleteShortcut(Context context, String shortcutId) {
+    if (Build.VERSION.SDK_INT < 26) {
+        // Старый способ для Android 7 и ниже
+        Intent intent = new Intent("com.android.launcher.action.UNINSTALL_SHORTCUT");
+        intent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, new Intent(context, YourActivity.class));
+        intent.putExtra(Intent.EXTRA_SHORTCUT_NAME, "Название ярлыка");
+        context.sendBroadcast(intent);
+    } else {
+        // Новый способ для Android 8+
+        ShortcutManager shortcutManager = context.getSystemService(ShortcutManager.class);
+        shortcutManager.removeDynamicShortcuts(Arrays.asList(shortcutId));
+    }
+}
+
+Способ 2: Через Broadcast с проверкой разрешения
+
+private void tryDeleteShortcut(Context context) {
+    // Проверяем есть ли разрешение
+    if (context.checkPermission("com.android.launcher.permission.UNINSTALL_SHORTCUT", 
+            android.os.Process.myPid(), android.os.Process.myUid()) == PackageManager.PERMISSION_GRANTED) {
+        
+        Intent shortcutIntent = new Intent(context, YourActivity.class);
+        shortcutIntent.setAction(Intent.ACTION_MAIN);
+        
+        Intent deleteIntent = new Intent();
+        deleteIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent);
+        deleteIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, "Имя ярлыка");
+        deleteIntent.setAction("com.android.launcher.action.UNINSTALL_SHORTCUT");
+        
+        context.sendBroadcast(deleteIntent);
+    }
+}
+
+
+Способ 3: Для MIUI - попытка обхода
+
+private void deleteShortcutMIUI(Context context) {
+    try {
+        // Пробуем разные интенты для разных лаунчеров
+        String[] launcherPackages = {
+            "com.miui.home",
+            "com.android.launcher",
+            "com.google.android.launcher"
+        };
+        
+        Intent shortcutIntent = new Intent(context, YourActivity.class);
+        shortcutIntent.setAction(Intent.ACTION_VIEW);
+        
+        for (String packageName : launcherPackages) {
+            Intent deleteIntent = new Intent("com.android.launcher.action.UNINSTALL_SHORTCUT");
+            deleteIntent.setPackage(packageName);
+            deleteIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent);
+            deleteIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, "Имя ярлыка");
+            context.sendBroadcast(deleteIntent);
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+
+
+Способ 4: Прагматичный подход - скрытие вместо удаления
+
+// Если удаление не работает, можно "скрыть" ярлык
+// сохраняя информацию о том, что он должен быть удален
+private void hideShortcut(Context context, String shortcutId) {
+    SharedPreferences prefs = context.getSharedPreferences("shortcuts", Context.MODE_PRIVATE);
+    prefs.edit().putBoolean(shortcutId + "_deleted", true).apply();
+    
+    // При создании ярлыков проверяем этот флаг
+    if (!prefs.getBoolean(shortcutId + "_deleted", false)) {
+        createShortcut(context, shortcutId);
+    }
+}
+
+
+
+Практические шаги для тестирования:
+
+1. Проверьте разрешение в манифесте:
+
+<uses-permission android:name="com.android.launcher.permission.UNINSTALL_SHORTCUT" />
+1. Добавьте логирование:
+
+`java
+
+Andy Donbas, [26.09.2025 5:22]
+private void debugShortcutDeletion(Context context) {
+    Log.d("Shortcut", "Проверка разрешения: " + 
+        (context.checkPermission("com.android.launcher.permission.UNINSTALL_SHORTCUT", 
+            android.os.Process.myPid(), android.os.Process.myUid()) == PackageManager.PERMISSION_GRANTED));
+    
+    // Пробуем отправить бродкаст
+    Intent testIntent = new Intent("com.android.launcher.action.UNINSTALL_SHORTCUT");
+    context.sendBroadcast(testIntent);
+    Log.d("Shortcut", "Бродкаст отправлен");
+}
+`
+
+1. Проверьте в разных условиях:
+
+· На стандартном лаунчере Android
+· На MIUI лаунчере
+· На других версиях Android
+
+Вывод
+
+Вы правы - если разрешение появилось, значит система его "видит" и теоретически должна давать возможность работать. Но на практике производители часто блокируют эту функциональность.
+
+Попробуйте начать с первого способа, добавьте подробное логирование и тестируйте на разных устройствах. Если не заработает - рассматривайте вариант со "скрытием" ярлыков через сохранение их состояния.
+
+Хотите, чтобы я помог настроить какой-то конкретный способ или добавить больше деталей для отладки?

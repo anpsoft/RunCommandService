@@ -9,15 +9,12 @@ for kotlin_file in src/*.kt; do
     [ -f "$kotlin_file" ] && echo "✅ Найден: $kotlin_file"
 done
 
-
-
 # Создание директорий
-
 mkdir -p app
 
 [ -d "app" ] || { echo "❌ Не удалось создать папку app/"; exit 1; }
 JAVA_PATH=$(echo "$PACKAGE" | tr '.' '/')
-mkdir -p app/src/main/java/$JAVA_PATH app/src/main/res/{values,layout,mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}}
+mkdir -p app/src/main/java/$JAVA_PATH app/src/main/res/{values,layout,mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}} app/src/main/assets
 
 # Keystore
 echo "✅ Создание debug keystore..."
@@ -40,7 +37,7 @@ for kotlin_file in src/*.kt; do
     echo "✅ Очищен: $base_name"
 done
 
-# Копирование особых иконок
+# Копирование иконок
 for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
     cp "icons/$ICON_LAUNCHER" app/src/main/res/mipmap-$density/ic_launcher.png
     cp "icons/$ICON_SHORTCUT" app/src/main/res/mipmap-$density/ic_shortcut.png
@@ -61,6 +58,12 @@ else
     exit 1
 fi
 
-
+# Копирование всех файлов из res/ в assets/
+if [ -d "res" ]; then
+    cp -r res/* app/src/main/assets/ 2>/dev/null || true
+    echo "✅ Копированы ресурсы из res/ в assets/"
+else
+    echo "⚠️ Папка res/ не найдена"
+fi
 
 echo "✅ Проект подготовлен"

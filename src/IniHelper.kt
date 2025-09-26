@@ -1,31 +1,90 @@
 package com.yourcompany.yourapp
 
 import android.content.Context
-import android.os.Environment
+import android.content.SharedPreferences
 import org.ini4j.Ini
 import java.io.File
 
 object IniHelper {
-    private val iniFile = File(Environment.getExternalStorageDirectory(), "MyScripts/scripts.ini")
+    private lateinit var iniFile: File
     private val ini = Ini()
 
-    init {
-        iniFile.parentFile?.mkdirs()
-        if (iniFile.exists()) {
-            ini.load(iniFile)
-        }
+fun init(context: Context) {
+    iniFile = getSettingsFile(context)
+    iniFile.parentFile?.mkdirs()
+    if (iniFile.exists()) {
+        ini.load(iniFile)
+    }
+    syncSettingsWithPrefs(context)
+}
+
+private fun syncSettingsWithPrefs(context: Context) {
+    getScriptsDir(context)
+    getIconsDir(context)
+}
+
+
+    private fun getSettingsFile(context: Context): File {
+        val scriptsDir = getScriptsDir(context)
+        return File(scriptsDir, "scripts.ini")
     }
 
-    fun getScriptConfig(scriptName: String): ScriptConfig {
-        val section = ini[scriptName] ?: return ScriptConfig()
-        return ScriptConfig(
-            name = section.get("name", ""),
-            description = section.get("description", ""),
-            icon = section.get("icon", ""),
-            isActive = section.get("is_active", "true").toBoolean(),
-            hasShortcut = section.get("has_shortcut", "false").toBoolean()
-        )
+    fun getScriptsDir(context: Context): String {
+        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val iniValue = ini["settings"]?.get("scripts_dir") ?: "/sdcard/MyScripts"
+        if (iniValue != "/sdcard/MyScripts" && iniValue.isNotEmpty()) {
+            prefs.edit().putString("scripts_dir", iniValue).apply()
+            return iniValue
+        }
+        val prefValue = prefs.getString("scripts_dir", "/sdcard/MyScripts") ?: "/sdcard/MyScripts"
+        ini.add("settings")["scripts_dir"] = prefValue
+        save()
+        return prefValue
     }
+
+    fun getIconsDir(context: Context): String {
+        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val iniValue = ini["settings"]?.get("icons_dir") ?: "/sdcard/MyScripts/icons"
+        if (iniValue != "/sdcard/MyScripts/icons" && iniValue.isNotEmpty()) {
+            prefs.edit().putString("icons_dir", iniValue).apply()
+            return iniValue
+        }
+        val prefValue = prefs.getString("icons_dir", "/sdcard/MyScripts/icons") ?: "/sdcard/MyScripts/icons"
+        ini.add("settings")["icons_dir"] = prefValue
+        save()
+        return prefValue
+    }
+
+    fun updateSettings(context: Context, scriptsDir: String, iconsDir: String) {
+        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putString("scripts_dir", scriptsDir).putString("icons_dir", iconsDir).apply()
+        val section = ini.add("settings")
+        section["scripts_dir"] = scriptsDir
+        section["icons_dir"] = iconsDir
+        save()
+    }
+
+
+
+fun getScriptConfig(scriptName: String): ScriptConfig {
+    return try {
+        val section = ini[scriptName]
+        if (section != null) {
+            ScriptConfig(
+                name = section.get("name", ""),
+                description = section.get("description", ""),
+                icon = section.get("icon", ""),
+                isActive = section.get("is_active", "true").toBoolean(),
+                hasShortcut = section.get("has_shortcut", "false").toBoolean()
+            )
+        } else {
+            // Для новых скриптов - активны по умолчанию
+            ScriptConfig(isActive = true)
+        }
+    } catch (e: Exception) {
+        ScriptConfig(isActive = true)
+    }
+}
 
     fun updateScriptConfig(scriptName: String, config: ScriptConfig) {
         val section = ini[scriptName] ?: ini.add(scriptName)
@@ -51,14 +110,14 @@ object IniHelper {
         save()
     }
 
-    fun cleanupOrphanedConfigs() {
-        val scriptsDir = File(Environment.getExternalStorageDirectory(), "MyScripts")
+    fun cleanupOrphanedConfigs(context: Context) {
+        val scriptsDir = File(getScriptsDir(context))
         val existingFiles = scriptsDir.listFiles { _, name -> name.endsWith(".sh") }
             ?.map { it.nameWithoutExtension }?.toSet() ?: emptySet()
         
         val sectionsToRemove = mutableListOf<String>()
         for (sectionName in ini.keys) {
-            if (!existingFiles.contains(sectionName)) {
+            if (!existingFiles.contains(sectionName) && sectionName != "settings") {
                 sectionsToRemove.add(sectionName)
             }
         }
@@ -69,11 +128,12 @@ object IniHelper {
         }
     }
 
-    fun createShortcutsForExisting(context: Context) {
+fun createShortcutsForExisting(context: Context) {
         for (sectionName in ini.keys) {
+            if (sectionName == "settings") continue
             val config = getScriptConfig(sectionName)
             if (config.hasShortcut) {
-                val scriptPath = "/sdcard/MyScripts/$sectionName.sh"
+                val scriptPath = "${getScriptsDir(context)}/$sectionName.sh"
                 ShortcutManager.createShortcut(context, sectionName, scriptPath, config.icon)
             }
         }
