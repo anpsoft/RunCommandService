@@ -325,20 +325,40 @@ class MainActivity : Activity() {
     override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
         return when (item.itemId) {
             1 -> {
-                startActivity(Intent(this, AboutActivity::class.java))
+                try {
+                    // Используй правильный package name
+                    val intent = Intent()
+                    intent.setClassName(packageName, "$packageName.AboutActivity")
+                    startActivity(intent)
+                    } catch (e: Exception) {
+                    Toast.makeText(this, "AboutActivity не найдена: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
                 true
             }
             2 -> {
-                startActivity(Intent(this, InstructionsActivity::class.java))
+                try {
+                    val intent = Intent()
+                    intent.setClassName(packageName, "$packageName.InstructionsActivity")
+                    startActivity(intent)
+                    } catch (e: Exception) {
+                    Toast.makeText(this, "InstructionsActivity не найдена: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
                 true
             }
             3 -> {
-                startActivity(Intent(this, SettingsActivity::class.java))
+                try {
+                    val intent = Intent()
+                    intent.setClassName(packageName, "$packageName.SettingsActivity")
+                    startActivity(intent)
+                    } catch (e: Exception) {
+                    Toast.makeText(this, "SettingsActivity не найдена: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
                 true
             }
             else -> super.onOptionsItemSelected(item)
         }
     }
+    
     
     private val Int.dp: Int
     get() = (this * resources.displayMetrics.density).toInt()
