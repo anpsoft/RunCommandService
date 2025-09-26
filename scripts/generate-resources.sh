@@ -1,9 +1,30 @@
 #!/bin/bash
-# Генерация AndroidManifest.xml
+
+# Читаем значения из ini (исправленное чтение)
+PACKAGE=$(grep "^package=" build.ini | cut -d'=' -f2)
+APP_NAME=$(grep "^appName=" build.ini | cut -d'=' -f2)
+
+# Читаем enabled для активити
+SHORTCUT_ENABLED=$(awk '/^\[ShortcutActivity\]/{flag=1; next} /^\[/{flag=0} flag && /^enabled=/{print $0}' build.ini | cut -d'=' -f2)
+SILENT_ENABLED=$(awk '/^\[SilentActivity\]/{flag=1; next} /^\[/{flag=0} flag && /^enabled=/{print $0}' build.ini | cut -d'=' -f2)
+
+# Устанавливаем дефолтные значения если пусто
+PACKAGE=${PACKAGE:-"com.yourcompany.yourapp5"}
+APP_NAME=${APP_NAME:-"YourApp5"}
+SHORTCUT_ENABLED=${SHORTCUT_ENABLED:-"true"}
+SILENT_ENABLED=${SILENT_ENABLED:-"false"}
+
+echo "📊 Прочитанные значения:"
+echo "PACKAGE=$PACKAGE"
+echo "APP_NAME=$APP_NAME" 
+echo "SHORTCUT_ENABLED=$SHORTCUT_ENABLED"
+echo "SILENT_ENABLED=$SILENT_ENABLED"
+
+# Начинаем генерацию манифеста
 cat << EOF > app/src/main/AndroidManifest.xml
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="$PACKAGE">
+package="$PACKAGE">
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT"/>
@@ -15,9 +36,9 @@ cat << EOF > app/src/main/AndroidManifest.xml
         android:label="$APP_NAME"
         android:theme="@android:style/Theme.DeviceDefault.Light">
         <activity
-            android:name=".MainActivity"
+            android:name=".PermissionActivity"
             android:exported="true"
-            android:enabled="$MAIN_ENABLED"
+            android:enabled="true"
             android:theme="@android:style/Theme.DeviceDefault.Light">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -25,9 +46,32 @@ cat << EOF > app/src/main/AndroidManifest.xml
             </intent-filter>
         </activity>
         <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:enabled="true"
+            android:theme="@android:style/Theme.DeviceDefault.Light" />
+        <activity
             android:name=".ScriptSettingsActivity"
             android:exported="false"
             android:theme="@android:style/Theme.DeviceDefault.Light" />
+EOF
+
+# Автоматически добавляем все активити из ini если enabled=true
+for activity in AboutActivity InstructionsActivity SettingsActivity; do
+    enabled=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^enabled=/{print \$0}" build.ini | cut -d'=' -f2)
+    if [ "$enabled" = "true" ]; then
+        echo "        <activity" >> app/src/main/AndroidManifest.xml
+        echo "            android:name=\".$activity\"" >> app/src/main/AndroidManifest.xml
+        echo "            android:exported=\"false\"" >> app/src/main/AndroidManifest.xml
+        echo "            android:theme=\"@android:style/Theme.DeviceDefault.Light\" />" >> app/src/main/AndroidManifest.xml
+        echo "✅ Добавлена активити: $activity"
+    else
+        echo "❌ Пропущена активити: $activity (enabled=$enabled)"
+    fi
+done
+
+# Добавляем остальные активити
+cat << EOF >> app/src/main/AndroidManifest.xml
         <activity
             android:name=".ShortcutActivity"
             android:exported="true"
@@ -46,6 +90,7 @@ cat << EOF > app/src/main/AndroidManifest.xml
     </application>
 </manifest>
 EOF
+
 # Копирование XML из templates/layout/
 if [ -d "templates/layout" ]; then
     for xml_file in $(find templates/layout -name "*.xml"); do
@@ -55,3 +100,11 @@ if [ -d "templates/layout" ]; then
     done
 fi
 echo "✅ Ресурсы сгенерированы"
+
+# Выводим сгенерированный манифест в лог для проверки  
+echo "📄 Сгенерированный AndroidManifest.xml:"
+echo "=================================="
+cat app/src/main/AndroidManifest.xml
+echo "=================================="
+echo "✅ AndroidManifest.xml создан успешно"
+echo "=================================="
