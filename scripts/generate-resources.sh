@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Читаем значения из ini
-PACKAGE=$(grep "^package=" app.ini| cut -d'=' -f2)
-APP_NAME=$(grep "^appName=" app.ini| cut -d'=' -f2)
+# Читаем значения из app.ini
+PACKAGE=$(grep "^package=" app.ini | cut -d'=' -f2)
+APP_NAME=$(grep "^appName=" app.ini | cut -d'=' -f2)
 
 # Проверяем, что значения существуют
 if [ -z "$PACKAGE" ] || [ -z "$APP_NAME" ]; then
-    echo "❌ Ошибка: package или appName отсутствуют в build.ini"
+    echo "❌ Ошибка: package или appName отсутствуют в app.ini"
     exit 1
 fi
 
@@ -31,25 +31,18 @@ package="$PACKAGE">
         android:theme="@android:style/Theme.DeviceDefault.Light">
 EOF
 
-# Добавляем активности из ini
+# Добавляем активности из app.ini
 for activity in PermissionActivity MainActivity ScriptSettingsActivity AboutActivity InstructionsActivity SettingsActivity ShortcutActivity SilentActivity; do
-    enabled=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^enabled=/{print \$0}" app.ini| cut -d'=' -f2)
-    package=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^package=/{print \$0}" app.ini| cut -d'=' -f2)
-    theme=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^theme=/{print \$0}" app.ini| cut -d'=' -f2)
+    enabled=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^enabled=/{print \$0}" app.ini | cut -d'=' -f2)
+    theme=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^theme=/{print \$0}" app.ini | cut -d'=' -f2)
     enabled=${enabled:-"false"}
-    package=${package:-"$PACKAGE"}
     theme=${theme:-"DeviceDefault.Light"}
-    echo "🔍 Проверяем $activity: enabled=$enabled, package=$package, theme=$theme"
+    echo "🔍 Проверяем $activity: enabled=$enabled, theme=$theme"
     if [ "$enabled" = "true" ]; then
         if [ "$activity" = "ShortcutActivity" ]; then
-            if [ "$package" = "$PACKAGE" ]; then
-                activity_name=".ShortcutActivity"
-            else
-                activity_name="$package.ShortcutActivity"
-            fi
             cat << EOF >> app/src/main/AndroidManifest.xml
         <activity
-            android:name="$activity_name"
+            android:name=".$activity"
             android:exported="true"
             android:enabled="$enabled"
             android:theme="@android:style/Theme.$theme">
@@ -60,14 +53,9 @@ for activity in PermissionActivity MainActivity ScriptSettingsActivity AboutActi
         </activity>
 EOF
         elif [ "$activity" = "PermissionActivity" ]; then
-            if [ "$package" = "$PACKAGE" ]; then
-                activity_name=".PermissionActivity"
-            else
-                activity_name="$package.PermissionActivity"
-            fi
             cat << EOF >> app/src/main/AndroidManifest.xml
         <activity
-            android:name="$activity_name"
+            android:name=".$activity"
             android:exported="true"
             android:enabled="$enabled"
             android:theme="@android:style/Theme.$theme">
@@ -78,20 +66,15 @@ EOF
         </activity>
 EOF
         else
-            if [ "$package" = "$PACKAGE" ]; then
-                activity_name=".$activity"
-            else
-                activity_name="$package.$activity"
-            fi
             cat << EOF >> app/src/main/AndroidManifest.xml
         <activity
-            android:name="$activity_name"
+            android:name=".$activity"
             android:exported="false"
             android:enabled="$enabled"
             android:theme="@android:style/Theme.$theme" />
 EOF
         fi
-        echo "✅ Добавлена активити: $activity ($activity_name)"
+        echo "✅ Добавлена активити: $activity (.$activity)"
     else
         echo "❌ Пропущена активити: $activity (enabled=$enabled)"
     fi
