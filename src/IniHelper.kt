@@ -10,43 +10,17 @@ object IniHelper {
     private val ini = Ini()
 
 fun init(context: Context) {
-    val scriptsDir = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        .getString("scripts_dir", "/sdcard/MyScripts") ?: "/sdcard/MyScripts"
-    
-    iniFile = File(scriptsDir, "scripts.ini")
+    iniFile = getSettingsFile(context)
     iniFile.parentFile?.mkdirs()
-    
     if (iniFile.exists()) {
-        try {
-            ini.load(iniFile)
-        } catch (e: Exception) {
-            // Если файл поврежден, создаем новый
-        }
+        ini.load(iniFile)
     }
     syncSettingsWithPrefs(context)
 }
 
 private fun syncSettingsWithPrefs(context: Context) {
-    val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-    
-    // Читаем из ini, если нет - берем из prefs, если нет - дефолт
-    val iniScriptsDir = ini["settings"]?.get("scripts_dir")
-    val iniIconsDir = ini["settings"]?.get("icons_dir")
-    
-    val finalScriptsDir = iniScriptsDir ?: prefs.getString("scripts_dir", "/sdcard/MyScripts") ?: "/sdcard/MyScripts"
-    val finalIconsDir = iniIconsDir ?: prefs.getString("icons_dir", "/sdcard/MyScripts/icons") ?: "/sdcard/MyScripts/icons"
-    
-    // Обновляем prefs
-    prefs.edit()
-        .putString("scripts_dir", finalScriptsDir)
-        .putString("icons_dir", finalIconsDir)
-        .apply()
-    
-    // Обновляем ini
-    val section = ini.add("settings")
-    section["scripts_dir"] = finalScriptsDir
-    section["icons_dir"] = finalIconsDir
-    save()
+    getScriptsDir(context)
+    getIconsDir(context)
 }
 
 
