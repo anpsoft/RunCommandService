@@ -1,7 +1,6 @@
 package com.yourcompany.yourapp6
 
 import android.content.Context
-import android.content.SharedPreferences
 import org.ini4j.Ini
 import java.io.File
 
@@ -23,7 +22,6 @@ object IniHelper {
         if (iniFile.exists()) {
             ini.load(iniFile)
         }
-        // Чтение секции settings без создания!
         val section = ini["settings"]
         val iniScripts = section?.get("scripts_dir")
         if (!iniScripts.isNullOrEmpty() && iniScripts != defaultScriptsDir) {
@@ -38,35 +36,33 @@ object IniHelper {
         iniFile = File(scriptsDir, "scripts.ini")
     }
 
-    private fun getSettingsFile(context: Context): File {
-        return File(getScriptsDir(context), "scripts.ini")
-    }
-
     fun getScriptsDir(context: Context): String {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         val section = ini["settings"]
         val iniValue = section?.get("scripts_dir")
-        if (!iniValue.isNullOrEmpty()) {
-            return iniValue
+        return if (!iniValue.isNullOrEmpty()) {
+            iniValue
+        } else {
+            prefs.getString("scripts_dir", "/sdcard/MyScripts") ?: "/sdcard/MyScripts"
         }
-        return prefs.getString("scripts_dir", "/sdcard/MyScripts") ?: "/sdcard/MyScripts"
     }
 
     fun getIconsDir(context: Context): String {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         val section = ini["settings"]
         val iniValue = section?.get("icons_dir")
-        if (!iniValue.isNullOrEmpty()) {
-            return iniValue
+        return if (!iniValue.isNullOrEmpty()) {
+            iniValue
+        } else {
+            prefs.getString("icons_dir", "/sdcard/MyScripts/icons") ?: "/sdcard/MyScripts/icons"
         }
-        return prefs.getString("icons_dir", "/sdcard/MyScripts/icons") ?: "/sdcard/MyScripts/icons"
     }
 
     fun updateSettings(context: Context, scriptsDir: String, iconsDir: String) {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         prefs.edit().putString("scripts_dir", scriptsDir).putString("icons_dir", iconsDir).apply()
-        var section = ini["settings"]
-        if (section == null) section = ini.add("settings")
+        // Создаём секцию если её нет!
+        val section = ini["settings"] ?: ini.add("settings")
         section.put("scripts_dir", scriptsDir)
         section.put("icons_dir", iconsDir)
         save()
@@ -74,27 +70,22 @@ object IniHelper {
     }
 
     fun getScriptConfig(scriptName: String): ScriptConfig {
-        return try {
-            val section = ini[scriptName]
-            if (section != null) {
-                ScriptConfig(
-                    name = section.get("name", ""),
-                    description = section.get("description", ""),
-                    icon = section.get("icon", ""),
-                    isActive = section.get("is_active", "true").toBoolean(),
-                    hasShortcut = section.get("has_shortcut", "false").toBoolean()
-                )
-            } else {
-                ScriptConfig(isActive = true)
-            }
-        } catch (e: Exception) {
+        val section = ini[scriptName]
+        return if (section != null) {
+            ScriptConfig(
+                name = section.get("name", ""),
+                description = section.get("description", ""),
+                icon = section.get("icon", ""),
+                isActive = section.get("is_active", "true").toBoolean(),
+                hasShortcut = section.get("has_shortcut", "false").toBoolean()
+            )
+        } else {
             ScriptConfig(isActive = true)
         }
     }
 
     fun updateScriptConfig(scriptName: String, config: ScriptConfig) {
-        var section = ini[scriptName]
-        if (section == null) section = ini.add(scriptName)
+        val section = ini[scriptName] ?: ini.add(scriptName)
         section.put("name", config.name)
         section.put("description", config.description)
         section.put("icon", config.icon)
@@ -154,3 +145,12 @@ object IniHelper {
         }
     }
 }
+
+// Твой ScriptConfig должен быть где-то рядом:
+data class ScriptConfig(
+    val name: String = "",
+    val description: String = "",
+    val icon: String = "",
+    val isActive: Boolean = false,
+    val hasShortcut: Boolean = false
+)
