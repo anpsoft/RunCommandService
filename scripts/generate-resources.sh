@@ -31,8 +31,11 @@ package="$PACKAGE">
         android:theme="@android:style/Theme.DeviceDefault.Light">
 EOF
 
+# Получаем список активностей из app.ini, фильтруя по суффиксу Activity
+activities=$(awk '/^\[.*Activity\]/{print substr($0,2,length($0)-2)}' app.ini)
+
 # Добавляем активности из app.ini
-for activity in PermissionActivity MainActivity ScriptSettingsActivity AboutActivity InstructionsActivity SettingsActivity ShortcutActivity SilentActivity; do
+for activity in $activities; do
     enabled=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^enabled=/{print \$0}" app.ini | cut -d'=' -f2)
     theme=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^theme=/{print \$0}" app.ini | cut -d'=' -f2)
     enabled=${enabled:-"false"}
