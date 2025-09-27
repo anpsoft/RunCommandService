@@ -3,10 +3,50 @@ package com.yourcompany.yourapp6
 import android.content.Context
 import org.ini4j.Ini
 import java.io.File
+import android.app.AlertDialog
+import android.util.Log
 
 object IniHelper {
     private lateinit var iniFile: File
     private val ini = Ini()
+    private const val MAX_INI_SIZE = 1024 // 1 KB
+
+    private fun checkIniSize(context: Context) {
+        if (iniFile.exists() && iniFile.length() > MAX_INI_SIZE) {
+            AlertDialog.Builder(context)
+                .setTitle("Предупреждение")
+                .setMessage("INI-файл превысил 1 КБ. Возможны проблемы с его целостностью.")
+                .setPositiveButton("ОК", null)
+                .show()
+        }
+    }
+
+    private fun readIni(context: Context, sectionName: String, key: String, defaultValue: String): String {
+        checkIniSize(context)
+        val section = ini[sectionName]
+        return section?.get(key) ?: defaultValue
+    }
+
+    private fun writeIni(context: Context, sectionName: String, key: String, value: String) {
+        synchronized(ini) {
+            val section = ini[sectionName] ?: ini.add(sectionName)
+            if (section[key] != value) {
+                section.put(key, value)
+                save(context)
+            }
+        }
+    }
+
+    private fun save(context: Context) {
+        synchronized(ini) {
+            try {
+                ini.store(iniFile)
+                checkIniSize(context)
+            } catch (e: Exception) {
+                Log.e("IniHelper", "Failed to save ini file: ${e.message}")
+            }
+        }
+    }
 
     fun init(context: Context) {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
@@ -22,14 +62,13 @@ object IniHelper {
         if (iniFile.exists()) {
             ini.load(iniFile)
         }
-        val section = ini["settings"]
-        val iniScripts = section?.get("scripts_dir")
-        if (!iniScripts.isNullOrEmpty() && iniScripts != defaultScriptsDir) {
+        val iniScripts = readIni(context, "settings", "scripts_dir", defaultScriptsDir)
+        if (iniScripts != defaultScriptsDir) {
             scriptsDir = iniScripts
             prefs.edit().putString("scripts_dir", scriptsDir).apply()
         }
-        val iniIcons = section?.get("icons_dir")
-        if (!iniIcons.isNullOrEmpty() && iniIcons != defaultIconsDir) {
+        val iniIcons = readIni(context, "settings", "icons_dir", defaultIconsDir)
+        if (iniIcons != defaultIconsDir) {
             iconsDir = iniIcons
             prefs.edit().putString("icons_dir", iconsDir).apply()
         }
@@ -37,35 +76,18 @@ object IniHelper {
     }
 
     fun getScriptsDir(context: Context): String {
-        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        val section = ini["settings"]
-        val iniValue = section?.get("scripts_dir")
-        return if (!iniValue.isNullOrEmpty()) {
-            iniValue
-        } else {
-            prefs.getString("scripts_dir", "/sdcard/MyScripts") ?: "/sdcard/MyScripts"
-        }
+        return readIni(context, "settings", "scripts_dir", "/sdcard/MyScripts")
     }
 
     fun getIconsDir(context: Context): String {
-        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        val section = ini["settings"]
-        val iniValue = section?.get("icons_dir")
-        return if (!iniValue.isNullOrEmpty()) {
-            iniValue
-        } else {
-            prefs.getString("icons_dir", "/sdcard/MyScripts/icons") ?: "/sdcard/MyScripts/icons"
-        }
+        return readIni(context, "settings", "icons_dir", "/sdcard/MyScripts/icons")
     }
 
     fun updateSettings(context: Context, scriptsDir: String, iconsDir: String) {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         prefs.edit().putString("scripts_dir", scriptsDir).putString("icons_dir", iconsDir).apply()
-        // Создаём секцию если её нет!
-        val section = ini["settings"] ?: ini.add("settings")
-        section.put("scripts_dir", scriptsDir)
-        section.put("icons_dir", iconsDir)
-        save()
+        writeIni(context, "settings", "scripts_dir", scriptsDir)
+        writeIni(context, "settings", "icons_dir", iconsDir)
         iniFile = File(scriptsDir, "scripts.ini")
     }
 
@@ -73,11 +95,11 @@ object IniHelper {
         val section = ini[scriptName]
         return if (section != null) {
             ScriptConfig(
-                name = section.get("name", ""),
-                description = section.get("description", ""),
-                icon = section.get("icon", ""),
-                isActive = section.get("is_active", "true").toBoolean(),
-                hasShortcut = section.get("has_shortcut", "false").toBoolean()
+                name = readIni(context, scriptName, "name", ""),
+                description = readIni(context, scriptName, "description", ""),
+                icon = readIni(context, scriptName, "icon", ""),
+                isActive = readIni(context, scriptName, "is_active", "true").toBoolean(),
+                hasShortcut = readIni(context, scriptName, "has_shortcut", "false").toBoolean()
             )
         } else {
             ScriptConfig(isActive = true)
@@ -85,13 +107,11 @@ object IniHelper {
     }
 
     fun updateScriptConfig(scriptName: String, config: ScriptConfig) {
-        val section = ini[scriptName] ?: ini.add(scriptName)
-        section.put("name", config.name)
-        section.put("description", config.description)
-        section.put("icon", config.icon)
-        section.put("is_active", config.isActive.toString())
-        section.put("has_shortcut", config.hasShortcut.toString())
-        save()
+        writeIni(context, scriptName, "name", config.name)
+        writeIni(context, scriptName, "description", config.description)
+        writeIni(context, scriptName, "icon", config.icon)
+        writeIni(context, scriptName, "is_active", config.isActive.toString())
+        writeIni(context, scriptName, "has_shortcut", config.hasShortcut.toString())
     }
 
     fun addScriptConfig(scriptName: String, config: ScriptConfig) {
@@ -105,7 +125,7 @@ object IniHelper {
 
     fun deleteScriptConfig(scriptName: String) {
         ini.remove(scriptName)
-        save()
+        save(context)
     }
 
     fun cleanupOrphanedConfigs(context: Context) {
@@ -122,7 +142,7 @@ object IniHelper {
 
         sectionsToRemove.forEach { ini.remove(it) }
         if (sectionsToRemove.isNotEmpty()) {
-            save()
+            save(context)
         }
     }
 
@@ -136,13 +156,4 @@ object IniHelper {
             }
         }
     }
-
-    private fun save() {
-        try {
-            ini.store(iniFile)
-        } catch (e: Exception) {
-            android.util.Log.e("IniHelper", "Failed to save ini file: ${e.message}")
-        }
-    }
 }
-
