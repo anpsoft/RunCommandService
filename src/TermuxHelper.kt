@@ -1,10 +1,12 @@
 package com.yourcompany.yourapp
 
 import android.app.ActivityManager
+import android.app.AlertDialog // Добавляем импорт
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri // Добавляем
 import android.util.Log
 import android.widget.Toast
 
