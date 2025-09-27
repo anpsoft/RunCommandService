@@ -10,13 +10,14 @@ import android.Manifest
 import android.widget.Toast
 
 class PermissionActivity : Activity() {
-
     private val PERMISSION_REQUEST_CODE = 1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (hasPermissions()) {
-            startMainActivity()
+            TermuxHelper.showPermissionDialogIfNeeded(this) {
+                startMainActivity()
+            }
         } else {
             requestPermissions()
         }
@@ -39,7 +40,9 @@ class PermissionActivity : Activity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSION_REQUEST_CODE && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-            startMainActivity()
+            TermuxHelper.showPermissionDialogIfNeeded(this) {
+                startMainActivity()
+            }
         } else {
             Toast.makeText(this, "Требуются разрешения для работы приложения", Toast.LENGTH_LONG).show()
             finish()

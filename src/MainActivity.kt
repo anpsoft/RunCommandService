@@ -63,17 +63,16 @@ class MainActivity : Activity() {
             }
         }
         
-        val runCommandButton = Button(this).apply {
-            text = "Отправить команду"
-            setOnClickListener {
-                if (!TermuxHelper.hasPermission(this@MainActivity)) {
-                    showPermissionDialog()
-                    } else {
-                    TermuxHelper.sendCommand(this@MainActivity, "${Environment.getExternalStorageDirectory()}/MyScripts/UpdateWDS.sh")
-                }
+
+    val runCommandButton = Button(this).apply {
+        text = "Отправить команду"
+        setOnClickListener {
+            TermuxHelper.showPermissionDialogIfNeeded(this@MainActivity) {
+                TermuxHelper.sendCommand(this@MainActivity, "${Environment.getExternalStorageDirectory()}/MyScripts/UpdateWDS.sh")
             }
         }
-        
+    }
+      
         val testDeleteButton = Button(this).apply {
             text = "ТЕСТ УДАЛЕНИЯ ЯРЛЫКА"
             textSize = 16f
@@ -264,26 +263,25 @@ class MainActivity : Activity() {
         .show()
     }
     
-    private fun onTestRun(script: Script) {
-        try {
-            if (!TermuxHelper.hasPermission(this)) {
-                showPermissionDialog()
-                return
-            }
+private fun onTestRun(script: Script) {
+    try {
+        TermuxHelper.showPermissionDialogIfNeeded(this) {
             val file = File(script.path)
             if (!file.exists()) {
                 Toast.makeText(this, "Скрипт не существует: ${script.path}", Toast.LENGTH_SHORT).show()
-                return
+                return@showPermissionDialogIfNeeded
             }
             TermuxHelper.startTermuxSilently(this)
             Thread.sleep(500)
             TermuxHelper.sendCommand(this, script.path)
-            } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "Error running script: ${e.message}")
-            Toast.makeText(this, "Ошибка выполнения скрипта: ${e.message}", Toast.LENGTH_SHORT).show()
         }
+    } catch (e: Exception) {
+        android.util.Log.e("MainActivity", "Error running script: ${e.message}")
+        Toast.makeText(this, "Ошибка выполнения скрипта: ${e.message}", Toast.LENGTH_SHORT).show()
     }
-    
+}
+
+
     private fun showPermissionDialog() {
         AlertDialog.Builder(this)
         .setTitle("Требуется разрешение")

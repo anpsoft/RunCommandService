@@ -101,4 +101,29 @@ object TermuxHelper {
             Toast.makeText(context, "Ошибка удаления ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
+    
+    
+fun showPermissionDialogIfNeeded(context: Context, onPermissionGranted: () -> Unit) {
+    if (!hasPermission(context)) {
+        AlertDialog.Builder(context)
+            .setTitle("Требуется разрешение")
+            .setMessage("Для работы с Termux нужно предоставить разрешение. Перейдите в Настройки > Приложения > ${context.packageManager.getApplicationLabel(context.applicationInfo)} > Разрешения и включите 'Запуск команд Termux'")
+            .setPositiveButton("Открыть настройки") { _, _ ->
+                try {
+                    val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    intent.data = Uri.parse("package:${context.packageName}")
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Не удалось открыть настройки", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Отмена", null)
+            .setCancelable(false)
+            .show()
+    } else {
+        onPermissionGranted()
+    }
+}    
+    
+    
 }
