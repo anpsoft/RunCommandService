@@ -182,3 +182,4 @@ showPermissionDialogIfNeeded
 
 PermissionActivity - после файловых разрешений
 MainActivity - перед отправкой команд
+
