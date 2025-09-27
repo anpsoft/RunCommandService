@@ -91,7 +91,7 @@ object IniHelper {
         return readIni("settings", "icons_dir", "/sdcard/MyScripts/icons")
     }
 
-    fun updateSettings(context: Context, scriptsDir: String, iconsDir: String) {
+    fun updateSettings(/* context: Context,  */scriptsDir: String, iconsDir: String) {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         prefs.edit().putString("scripts_dir", scriptsDir).putString("icons_dir", iconsDir).apply()
         writeIni("settings", "scripts_dir", scriptsDir)

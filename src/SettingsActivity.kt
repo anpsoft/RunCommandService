@@ -34,7 +34,7 @@ class SettingsActivity : Activity() {
                 val scriptsDir = scriptsEdit.text.toString()
                 val iconsDir = iconsEdit.text.toString()
                 if (scriptsDir.isNotEmpty() && iconsDir.isNotEmpty()) {
-                    IniHelper.updateSettings(this@SettingsActivity, scriptsDir, iconsDir)
+                    IniHelper.updateSettings(/* this@SettingsActivity, */ scriptsDir, iconsDir)
                     if (!File(scriptsDir).mkdirs()) Toast.makeText(this@SettingsActivity, "Ошибка создания папки скриптов", Toast.LENGTH_SHORT).show()
                     if (!File(iconsDir).mkdirs()) Toast.makeText(this@SettingsActivity, "Ошибка создания папки иконок", Toast.LENGTH_SHORT).show()
                     Toast.makeText(this@SettingsActivity, "Сохранено", Toast.LENGTH_SHORT).show()
