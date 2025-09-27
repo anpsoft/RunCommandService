@@ -91,8 +91,8 @@ object IniHelper {
         return readIni("settings", "icons_dir", "/sdcard/MyScripts/icons")
     }
 
-    fun updateSettings(scriptsDir: String, iconsDir: String) {
-        val prefs = appContext!!.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    fun updateSettings(context: Context, scriptsDir: String, iconsDir: String) {
+        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         prefs.edit().putString("scripts_dir", scriptsDir).putString("icons_dir", iconsDir).apply()
         writeIni("settings", "scripts_dir", scriptsDir)
         writeIni("settings", "icons_dir", iconsDir)
@@ -154,15 +154,13 @@ object IniHelper {
         }
     }
 
-    fun createShortcutsForExisting() {
+    fun createShortcutsForExisting(context: Context) {
         for (sectionName in ini.keys) {
             if (sectionName == "settings") continue
             val config = getScriptConfig(sectionName)
             if (config.hasShortcut) {
                 val scriptPath = "${getScriptsDir()}/$sectionName.sh"
-                appContext?.let { ctx ->
-                    ShortcutManager.createShortcut(ctx, sectionName, scriptPath, config.icon)
-                } ?: Log.e("IniHelper", "Cannot create shortcut, context not initialized.")
+                ShortcutManager.createShortcut(context, sectionName, scriptPath, config.icon)
             }
         }
     }
