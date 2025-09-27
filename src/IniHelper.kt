@@ -24,7 +24,8 @@ object IniHelper {
             ini.load(iniFile)
         }
         
-        val section = ini["settings"] ?: ini.add("settings")
+        // val section = ini["settings"] ?: ini.add("settings")
+        val section = ini["settings"]
         
         val iniScripts = section.get("scripts_dir")
         if (!iniScripts.isNullOrEmpty() && iniScripts != defaultScriptsDir) {
