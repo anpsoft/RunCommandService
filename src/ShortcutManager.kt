@@ -79,7 +79,7 @@ object ShortcutManager {
     }
     
     
-    fun deleteShortcut(context: Context, scriptName: String, scriptPath: String) {
+/*     fun deleteShortcut(context: Context, scriptName: String, scriptPath: String) {
         try {
             // Точно такой же Intent как при создании
             val shortcutIntent = Intent().apply {
@@ -110,8 +110,56 @@ object ShortcutManager {
             } catch (e: Exception) {
             Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
         }
+    } */
+
+fun deleteShortcut(context: Context, scriptName: String, scriptPath: String) {
+    try {
+        val shortcutIntent = Intent().apply {
+            component = ComponentName(context.packageName, "${context.packageName}.ShortcutActivity")
+            action = "RUN_SCRIPT"
+            putExtra("script_path", scriptPath)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        
+        val removeIntent = Intent("com.android.launcher.action.UNINSTALL_SHORTCUT").apply {
+            // 🔥 ДОБАВИТЬ ПАКЕТ ДЛЯ MIUI
+            setPackage("com.miui.home")
+            
+            putExtra(Intent.EXTRA_SHORTCUT_NAME, scriptName)
+            putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
+            
+            // 🔥 ДОБАВИТЬ ДЛЯ СОВМЕСТИМОСТИ
+            putExtra("duplicate", false)
+        }
+        
+        context.sendBroadcast(removeIntent)
+        
+        // 🔥 ПОПРОБОВАТЬ ВТОРОЙ ВАРИАНТ ACTION
+        try {
+            val removeIntent2 = Intent("com.miui.home.action.UNINSTALL_SHORTCUT").apply {
+                setPackage("com.miui.home")
+                putExtra(Intent.EXTRA_SHORTCUT_NAME, scriptName)
+                putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
+            }
+            context.sendBroadcast(removeIntent2)
+        } catch (e: Exception) {
+            // Игнорируем если не поддерживается
+        }
+        
+        val hasPermission = context.checkPermission(
+            "com.android.launcher.permission.UNINSTALL_SHORTCUT",
+            android.os.Process.myPid(),
+            android.os.Process.myUid()
+        ) == PackageManager.PERMISSION_GRANTED
+        
+        Toast.makeText(context, 
+            "Команды удаления отправлены. Разрешение: $hasPermission", 
+            Toast.LENGTH_LONG).show()
+            
+    } catch (e: Exception) {
+        Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
     }
-    
+}
     
     
 }

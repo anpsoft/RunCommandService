@@ -28,7 +28,7 @@ object TermuxHelper {
                 intent.component = ComponentName("com.termux", "com.termux.app.TermuxActivity")
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 context.startActivity(intent)
-                Thread.sleep(3000)
+                Thread.sleep(2000)
             }
         } catch (_: Exception) {
         }

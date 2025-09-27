@@ -12,7 +12,7 @@ class ShortcutActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        IniHelper.init(this)
+        
         
         if (intent.action == "RUN_SCRIPT") {
             val scriptPath = intent.getStringExtra("script_path")
