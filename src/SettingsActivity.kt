@@ -20,12 +20,12 @@ class SettingsActivity : Activity() {
 
         val scriptsEdit = EditText(this).apply {
             hint = "Папка для скриптов"
-            setText(IniHelper.getScriptsDir(this@SettingsActivity))
+            setText(IniHelper.getScriptsDir())
         }
 
         val iconsEdit = EditText(this).apply {
             hint = "Папка для иконок"
-            setText(IniHelper.getIconsDir(this@SettingsActivity))
+            setText(IniHelper.getIconsDir())
         }
 
         val saveButton = Button(this).apply {

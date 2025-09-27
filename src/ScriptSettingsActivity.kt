@@ -52,7 +52,7 @@ class ScriptSettingsActivity : Activity() {
         val editFileButton = Button(this).apply {
             text = "Редактировать"
             setOnClickListener {
-                val scriptFile = File(IniHelper.getScriptsDir(this@ScriptSettingsActivity), "$scriptName.sh")
+                val scriptFile = File(IniHelper.getScriptsDir(), "$scriptName.sh")
                 val intent = Intent(Intent.ACTION_EDIT).apply {
                     setDataAndType(Uri.fromFile(scriptFile), "text/plain")
                 }
@@ -74,8 +74,8 @@ class ScriptSettingsActivity : Activity() {
                     .setPositiveButton("ОК") { _, _ ->
                         val newName = newNameEdit.text.toString()
                         if (newName != scriptName && newName.isNotEmpty()) {
-                            val oldFile = File(IniHelper.getScriptsDir(this@ScriptSettingsActivity), "$scriptName.sh")
-                            val newFile = File(IniHelper.getScriptsDir(this@ScriptSettingsActivity), "$newName.sh")
+                            val oldFile = File(IniHelper.getScriptsDir(), "$scriptName.sh")
+                            val newFile = File(IniHelper.getScriptsDir(), "$newName.sh")
                             if (oldFile.exists() && !newFile.exists() && oldFile.renameTo(newFile)) {
                                 val currentConfig = IniHelper.getScriptConfig(scriptName)
                                 IniHelper.deleteScriptConfig(scriptName)
@@ -99,7 +99,7 @@ class ScriptSettingsActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
         }
         val iconView = ImageView(this).apply {
-            val iconFile = File(IniHelper.getIconsDir(this@ScriptSettingsActivity), config.icon)
+            val iconFile = File(IniHelper.getIconsDir(), config.icon)
             if (config.icon.isNotEmpty() && iconFile.exists()) {
                 setImageURI(Uri.fromFile(iconFile))
             } else {
@@ -123,7 +123,7 @@ class ScriptSettingsActivity : Activity() {
         val testButton = Button(this).apply {
             text = "Тест скрипта"
             setOnClickListener {
-                val scriptPath = "${IniHelper.getScriptsDir(this@ScriptSettingsActivity)}/$scriptName.sh"
+                val scriptPath = "${IniHelper.getScriptsDir()}/$scriptName.sh"
                 val file = File(scriptPath)
                 if (!file.exists()) {
                     Toast.makeText(this@ScriptSettingsActivity, "Скрипт не существует", Toast.LENGTH_SHORT).show()
@@ -146,7 +146,7 @@ class ScriptSettingsActivity : Activity() {
                     .setTitle("Удалить скрипт")
                     .setMessage("Уверены?")
                     .setPositiveButton("Да") { _, _ ->
-                        File(IniHelper.getScriptsDir(this@ScriptSettingsActivity), "$scriptName.sh").delete()
+                        File(IniHelper.getScriptsDir(), "$scriptName.sh").delete()
                         IniHelper.deleteScriptConfig(scriptName)
                         finish()
                     }
@@ -201,11 +201,11 @@ class ScriptSettingsActivity : Activity() {
     }
 
     private fun showIconPicker(scriptName: String, config: ScriptConfig, iconView: ImageView) {
-        val iconsDir = File(IniHelper.getIconsDir(this))
+        val iconsDir = File(IniHelper.getIconsDir())
         iconsDir.mkdirs()
         val icons = iconsDir.listFiles { _, name -> name.endsWith(".png") || name.endsWith(".jpg") } ?: arrayOf()
         if (icons.isEmpty()) {
-            Toast.makeText(this, "Нет иконок в ${IniHelper.getIconsDir(this)}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Нет иконок в ${IniHelper.getIconsDir()}", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -230,7 +230,7 @@ class ScriptSettingsActivity : Activity() {
     }
 
     private fun showShortcutUpdateDialog(scriptName: String, oldConfig: ScriptConfig, newConfig: ScriptConfig) {
-        val scriptPath = File(IniHelper.getScriptsDir(this), "$scriptName.sh").absolutePath
+        val scriptPath = File(IniHelper.getScriptsDir(), "$scriptName.sh").absolutePath
         ShortcutManager.showShortcutUpdateDialog(this, scriptName, scriptPath, oldConfig, newConfig)
         finish()
     }

@@ -77,7 +77,7 @@ class PermissionActivity : Activity() {
     private fun checkFirstRun() {
         val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
         if (prefs.getBoolean("first_run", true)) {
-            IniHelper.cleanupOrphanedConfigs(this)
+            IniHelper.cleanupOrphanedConfigs()
             if (ContextCompat.checkSelfPermission(this, "com.android.launcher.permission.INSTALL_SHORTCUT") == PackageManager.PERMISSION_GRANTED) {
                 IniHelper.createShortcutsForExisting(this)
             }
