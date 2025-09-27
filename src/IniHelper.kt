@@ -146,11 +146,3 @@ object IniHelper {
     }
 }
 
-// Твой ScriptConfig должен быть где-то рядом:
-data class ScriptConfig(
-    val name: String = "",
-    val description: String = "",
-    val icon: String = "",
-    val isActive: Boolean = false,
-    val hasShortcut: Boolean = false
-)
