@@ -92,7 +92,7 @@ object IniHelper {
     }
 
     fun updateSettings(/* context: Context,  */scriptsDir: String, iconsDir: String) {
-        val prefs = appContext.getSharedPreferences("app_prefs", appContext.MODE_PRIVATE)
+        val prefs = appContext?.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) ?: return
         prefs.edit().putString("scripts_dir", scriptsDir).putString("icons_dir", iconsDir).apply()
         writeIni("settings", "scripts_dir", scriptsDir)
         writeIni("settings", "icons_dir", iconsDir)
