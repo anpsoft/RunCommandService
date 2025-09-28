@@ -1,4 +1,4 @@
-// MainActivity.kt (обновляем кнопку создания ярлыка)
+// MainActivity.kt
 package com.yourcompany.yourapp5
 
 import android.app.Activity
@@ -50,11 +50,13 @@ class MainActivity : Activity() {
         val createShortcutButton = Button(this).apply {
             text = "Создать ссылку"
             setOnClickListener {
+                val scriptName = "UpdateWDS"
+                val scriptPath = "${Environment.getExternalStorageDirectory()}/MyScripts/UpdateWDS.sh"
                 ShortcutManager.createShortcut(
                     this@MainActivity,
-                    "UpdateWDS",
-                    "${Environment.getExternalStorageDirectory()}/MyScripts/UpdateWDS.sh",
-                    "ic_shortcut.png" // Указываем имя иконки вместо ресурса
+                    scriptName,
+                    scriptPath,
+                    "Terminal.png" // Жёстко заданная иконка, как было в TermuxHelper
                 )
             }
         }
