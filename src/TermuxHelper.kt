@@ -1,12 +1,13 @@
+// TermuxHelper.kt (удаляем дублирующие функции)
 package com.yourcompany.yourapp
 
 import android.app.ActivityManager
-import android.app.AlertDialog // Добавляем импорт
+import android.app.AlertDialog
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri // Добавляем
+import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 
@@ -61,71 +62,25 @@ object TermuxHelper {
         }
     }
 
-    fun createShortcut(context: Context, name: String, scriptPath: String, activityClass: String, iconResource: Int) {
-        try {
-            val shortcutIntent = Intent().apply {
-                component = ComponentName(context.packageName, activityClass)
-                action = "RUN_SCRIPT"
-                putExtra("script_path", scriptPath)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            }
-
-            val uniqueName = name
-
-            val addIntent = Intent("com.android.launcher.action.INSTALL_SHORTCUT").apply {
-                putExtra(Intent.EXTRA_SHORTCUT_NAME, uniqueName)
-                putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
-                putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
-                    Intent.ShortcutIconResource.fromContext(context, iconResource))
-            }
-            context.sendBroadcast(addIntent)
-            Toast.makeText(context, "Ярлык создан", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            Toast.makeText(context, "Ошибка создания ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    fun deleteShortcut(context: Context, name: String, scriptPath: String) {
-        try {
-            val shortcutIntent = Intent().apply {
-                component = ComponentName(context.packageName, "${context.packageName}.ShortcutActivity")
-                action = "RUN_SCRIPT"
-                putExtra("script_path", scriptPath)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            }
-            val removeIntent = Intent("com.android.launcher.action.UNINSTALL_SHORTCUT").apply {
-                putExtra(Intent.EXTRA_SHORTCUT_NAME, name)
-                putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
-            }
-            context.sendBroadcast(removeIntent)
-            Toast.makeText(context, "Ярлык удалён", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            Toast.makeText(context, "Ошибка удаления ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
-        }
-    }
-    
-    
-fun showPermissionDialogIfNeeded(context: Context, onPermissionGranted: () -> Unit) {
-    if (!hasPermission(context)) {
-        AlertDialog.Builder(context)
-            .setTitle("Требуется разрешение")
-            .setMessage("Для работы с Termux нужно предоставить разрешение. Перейдите в Настройки > Приложения > ${context.packageManager.getApplicationLabel(context.applicationInfo)} > Разрешения и включите 'Запуск команд Termux'")
-            .setPositiveButton("Открыть настройки") { _, _ ->
-                try {
-                    val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                    intent.data = Uri.parse("package:${context.packageName}")
-                    context.startActivity(intent)
-                } catch (e: Exception) {
-                    Toast.makeText(context, "Не удалось открыть настройки", Toast.LENGTH_SHORT).show()
+    fun showPermissionDialogIfNeeded(context: Context, onPermissionGranted: () -> Unit) {
+        if (!hasPermission(context)) {
+            AlertDialog.Builder(context)
+                .setTitle("Требуется разрешение")
+                .setMessage("Для работы с Termux нужно предоставить разрешение. Перейдите в Настройки > Приложения > ${context.packageManager.getApplicationLabel(context.applicationInfo)} > Разрешения и включите 'Запуск команд Termux'")
+                .setPositiveButton("Открыть настройки") { _, _ ->
+                    try {
+                        val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                        intent.data = Uri.parse("package:${context.packageName}")
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Не удалось открыть настройки", Toast.LENGTH_SHORT).show()
+                    }
                 }
-            }
-            .setNegativeButton("Отмена", null)
-            .setCancelable(false)
-            .show()
-    } else {
-        onPermissionGranted()
+                .setNegativeButton("Отмена", null)
+                .setCancelable(false)
+                .show()
+        } else {
+            onPermissionGranted()
+        }
     }
-}    
-    
-    
 }

@@ -1,3 +1,4 @@
+// MainActivity.kt (обновляем кнопку создания ярлыка)
 package com.yourcompany.yourapp5
 
 import android.app.Activity
@@ -49,12 +50,11 @@ class MainActivity : Activity() {
         val createShortcutButton = Button(this).apply {
             text = "Создать ссылку"
             setOnClickListener {
-                TermuxHelper.createShortcut(
+                ShortcutManager.createShortcut(
                     this@MainActivity,
                     "UpdateWDS",
                     "${Environment.getExternalStorageDirectory()}/MyScripts/UpdateWDS.sh",
-                    "${packageName}.ShortcutActivity",
-                    R.mipmap.ic_shortcut
+                    "ic_shortcut.png" // Указываем имя иконки вместо ресурса
                 )
             }
         }
@@ -179,7 +179,7 @@ class MainActivity : Activity() {
             setOnClickListener { updateScriptList() }
         }
         val createScriptButton = Button(this).apply {
-            text = "Новый"
+            text = "Создать"
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             setOnClickListener { createNewScript() }
         }
@@ -206,7 +206,7 @@ class MainActivity : Activity() {
             scriptsDir.mkdirs()
             File(scriptsDir, "icons").mkdirs()
 
-            IniHelper.cleanupOrphanedConfigs() // Убрали this
+            IniHelper.cleanupOrphanedConfigs()
 
             val scripts = scriptsDir.listFiles { _, name -> name.endsWith(".sh") }?.map { file ->
                 Script(file.nameWithoutExtension, "${scriptsDir.absolutePath}/${file.name}")
@@ -229,7 +229,7 @@ class MainActivity : Activity() {
                     val scriptFile = File(Environment.getExternalStorageDirectory(), "MyScripts/$name.sh")
                     try {
                         if (scriptFile.createNewFile()) {
-                            IniHelper.addScriptConfig(name, ScriptConfig(name = name, isActive = true)) // Убрали this
+                            IniHelper.addScriptConfig(name, ScriptConfig(name = name, isActive = true))
                             val intent = Intent(Intent.ACTION_EDIT).apply {
                                 setDataAndType(Uri.fromFile(scriptFile), "text/plain")
                             }
