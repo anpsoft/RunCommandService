@@ -1,9 +1,12 @@
+// ShortcutManager.kt
 package com.yourcompany.yourapp
 
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.util.Log
 import android.widget.Toast
 import java.io.File
@@ -11,12 +14,8 @@ import java.io.File
 object ShortcutManager {
 
     fun getIconResource(iconName: String): Int {
-        return when (iconName) {
-            "icon.png" -> R.mipmap.ic_launcher
-            "Terminal.png" -> R.mipmap.ic_shortcut
-            "no_icon.png" -> R.mipmap.ic_no_icon
-            else -> R.mipmap.ic_no_icon
-        }
+        Log.d("ShortcutManager", "getIconResource: icon=$iconName, returning default: ic_no_icon")
+        return R.mipmap.ic_no_icon
     }
 
     fun createShortcut(context: Context, scriptName: String, scriptPath: String, iconName: String) {
@@ -34,8 +33,33 @@ object ShortcutManager {
             val addIntent = Intent("com.android.launcher.action.INSTALL_SHORTCUT").apply {
                 putExtra(Intent.EXTRA_SHORTCUT_NAME, displayName)
                 putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
-                putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
-                    Intent.ShortcutIconResource.fromContext(context, getIconResource(iconName)))
+
+                // Проверяем, указана ли иконка и существует ли файл
+                if (iconName.isNotEmpty()) {
+                    val iconFile = File(IniHelper.getIconsDir(), iconName)
+                    if (iconFile.exists() && (iconName.endsWith(".png") || iconName.endsWith(".jpg"))) {
+                        Log.d("ShortcutManager", "Using custom icon file: ${iconFile.absolutePath}")
+                        val options = BitmapFactory.Options().apply {
+                            inPreferredConfig = Bitmap.Config.ARGB_8888 // Сохраняем прозрачность
+                        }
+                        val bitmap = BitmapFactory.decodeFile(iconFile.absolutePath, options)
+                        if (bitmap != null) {
+                            putExtra(Intent.EXTRA_SHORTCUT_ICON, bitmap)
+                        } else {
+                            Log.w("ShortcutManager", "Failed to decode bitmap for ${iconFile.absolutePath}, using default")
+                            putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
+                                Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_no_icon))
+                        }
+                    } else {
+                        Log.w("ShortcutManager", "Icon file not found or invalid: ${iconFile.absolutePath}, using default")
+                        putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
+                            Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_no_icon))
+                    }
+                } else {
+                    Log.d("ShortcutManager", "No icon specified, using default: ic_no_icon")
+                    putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
+                        Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_no_icon))
+                }
             }
 
             Log.d("ShortcutManager", "Creating shortcut: name=$scriptName, path=$scriptPath, icon=$iconName")
