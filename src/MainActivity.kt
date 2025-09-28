@@ -49,7 +49,7 @@ class MainActivity : Activity() {
 
 val createShortcutButton = Button(this).apply {
     text = "Создать ссылку"
-    setCompoundDrawablesWithIntrinsicBounds(R.mipmap.ic_terminal, 0, 0, 0)
+    setCompoundDrawablesWithIntrinsicBounds(R.mipmap.ic_shortcut, 0, 0, 0)
     setOnClickListener {
         val scriptName = "UpdateWDS"
         val scriptPath = "${Environment.getExternalStorageDirectory()}/MyScripts/UpdateWDS.sh"
