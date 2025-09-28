@@ -18,60 +18,55 @@ object ShortcutManager {
         return R.mipmap.ic_no_icon
     }
 
-    fun createShortcut(context: Context, scriptName: String, scriptPath: String, iconName: String) {
-        try {
-            val config = IniHelper.getScriptConfig(scriptName)
-            val displayName = config.name.ifEmpty { scriptName }
+fun createShortcut(context: Context, scriptName: String, scriptPath: String, iconName: String) {
+    try {
+        val config = IniHelper.getScriptConfig(scriptName)
+        val displayName = config.name.ifEmpty { scriptName }
 
-            val shortcutIntent = Intent().apply {
-                component = ComponentName(context.packageName, "${context.packageName}.ShortcutActivity")
-                action = "RUN_SCRIPT"
-                putExtra("script_path", scriptPath)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            }
+        val shortcutIntent = Intent().apply {
+            component = ComponentName(context.packageName, "${context.packageName}.ShortcutActivity")
+            action = "RUN_SCRIPT"
+            putExtra("script_path", scriptPath)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
 
-            val addIntent = Intent("com.android.launcher.action.INSTALL_SHORTCUT").apply {
-                putExtra(Intent.EXTRA_SHORTCUT_NAME, displayName)
-                putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
+        val addIntent = Intent("com.android.launcher.action.INSTALL_SHORTCUT").apply {
+            putExtra(Intent.EXTRA_SHORTCUT_NAME, displayName)
+            putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
 
-                // Проверяем, указана ли иконка и существует ли файл
-                if (iconName.isNotEmpty()) {
-                    val iconFile = File(IniHelper.getIconsDir(), iconName)
-                    if (iconFile.exists() && (iconName.endsWith(".png") || iconName.endsWith(".jpg"))) {
-                        Log.d("ShortcutManager", "Using custom icon file: ${iconFile.absolutePath}")
-                        val options = BitmapFactory.Options().apply {
-                            inPreferredConfig = Bitmap.Config.ARGB_8888 // Сохраняем прозрачность
-                        }
-                        val bitmap = BitmapFactory.decodeFile(iconFile.absolutePath, options)
-                        if (bitmap != null) {
-                            putExtra(Intent.EXTRA_SHORTCUT_ICON, bitmap)
-                        } else {
-                            Log.w("ShortcutManager", "Failed to decode bitmap for ${iconFile.absolutePath}, using default")
-                            putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
-                                Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_no_icon))
-                        }
+            if (iconName.isNotEmpty()) {
+                val iconFile = File(IniHelper.getIconsDir(), iconName)
+                if (iconFile.exists() && (iconName.endsWith(".png") || iconName.endsWith(".jpg"))) {
+                    Log.d("ShortcutManager", "Using custom icon file: ${iconFile.absolutePath}")
+                    val bitmap = BitmapFactory.decodeFile(iconFile.absolutePath)
+                    if (bitmap != null) {
+                        putExtra(Intent.EXTRA_SHORTCUT_ICON, bitmap)
+                        bitmap.recycle()
                     } else {
-                        Log.w("ShortcutManager", "Icon file not found or invalid: ${iconFile.absolutePath}, using default")
+                        Log.w("ShortcutManager", "Failed to decode bitmap, using default")
                         putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
                             Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_no_icon))
                     }
                 } else {
-                    Log.d("ShortcutManager", "No icon specified, using default: ic_no_icon")
+                    Log.w("ShortcutManager", "Icon file not found or invalid, using default")
                     putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
                         Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_no_icon))
                 }
+            } else {
+                Log.d("ShortcutManager", "No icon specified, using default")
+                putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
+                    Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_no_icon))
             }
-
-            Log.d("ShortcutManager", "Creating shortcut: name=$scriptName, path=$scriptPath, icon=$iconName")
-            context.sendBroadcast(addIntent)
-
-            IniHelper.updateScriptConfig(scriptName, config.copy(hasShortcut = true))
-            Toast.makeText(context, "Ярлык создан", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            Log.e("ShortcutManager", "Failed to create shortcut: ${e.message}")
-            Toast.makeText(context, "Ошибка создания ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
         }
+
+        context.sendBroadcast(addIntent)
+        IniHelper.updateScriptConfig(scriptName, config.copy(hasShortcut = true))
+        Toast.makeText(context, "Ярлык создан", Toast.LENGTH_SHORT).show()
+    } catch (e: Exception) {
+        Log.e("ShortcutManager", "Failed to create shortcut: ${e.message}")
+        Toast.makeText(context, "Ошибка создания ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
     }
+}
 
     fun showManualDeleteDialog(context: Context, scriptName: String) {
         val config = IniHelper.getScriptConfig(scriptName)

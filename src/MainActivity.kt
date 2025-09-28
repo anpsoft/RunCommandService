@@ -47,15 +47,16 @@ class MainActivity : Activity() {
             setPadding(16, 16, 16, 16)
         }
 
-        val createShortcutButton = Button(this).apply {
-            text = "Создать ссылку"
-            setOnClickListener {
-                val scriptName = "UpdateWDS"
-                val scriptPath = "${Environment.getExternalStorageDirectory()}/MyScripts/UpdateWDS.sh"
-                Log.d("MainActivity", "Creating shortcut: name=$scriptName, path=$scriptPath, icon=Terminal.png")
-                ShortcutManager.createShortcut(this@MainActivity, scriptName, scriptPath, "Terminal.png")
-            }
-        }
+val createShortcutButton = Button(this).apply {
+    text = "Создать ссылку"
+    setCompoundDrawablesWithIntrinsicBounds(R.mipmap.ic_terminal, 0, 0, 0)
+    setOnClickListener {
+        val scriptName = "UpdateWDS"
+        val scriptPath = "${Environment.getExternalStorageDirectory()}/MyScripts/UpdateWDS.sh"
+        Log.d("MainActivity", "Creating shortcut: name=$scriptName, path=$scriptPath, icon=Terminal.png")
+        ShortcutManager.createShortcut(this@MainActivity, scriptName, scriptPath, "Terminal.png")
+    }
+}
 
         val runCommandButton = Button(this).apply {
             text = "Отправить команду"
