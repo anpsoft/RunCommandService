@@ -1,12 +1,10 @@
-// ShortcutManager.kt
 package com.yourcompany.yourapp
 
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.util.Log
 import android.widget.Toast
 import java.io.File
 
@@ -36,30 +34,17 @@ object ShortcutManager {
             val addIntent = Intent("com.android.launcher.action.INSTALL_SHORTCUT").apply {
                 putExtra(Intent.EXTRA_SHORTCUT_NAME, displayName)
                 putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
-
-                // Проверяем, является ли iconName файлом в папке иконок
-                val iconFile = File(IniHelper.getIconsDir(), iconName)
-                if (iconFile.exists() && (iconName.endsWith(".png") || iconName.endsWith(".jpg"))) {
-                    val bitmap = BitmapFactory.decodeFile(iconFile.absolutePath)
-                    if (bitmap != null) {
-                        putExtra(Intent.EXTRA_SHORTCUT_ICON, bitmap)
-                    } else {
-                        putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
-                            Intent.ShortcutIconResource.fromContext(context, getIconResource(iconName)))
-                    }
-                } else {
-                    putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
-                        Intent.ShortcutIconResource.fromContext(context, getIconResource(iconName)))
-                }
+                putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
+                    Intent.ShortcutIconResource.fromContext(context, getIconResource(iconName)))
             }
 
+            Log.d("ShortcutManager", "Creating shortcut: name=$scriptName, path=$scriptPath, icon=$iconName")
             context.sendBroadcast(addIntent)
 
-            // Обновляем конфиг
             IniHelper.updateScriptConfig(scriptName, config.copy(hasShortcut = true))
-
             Toast.makeText(context, "Ярлык создан", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
+            Log.e("ShortcutManager", "Failed to create shortcut: ${e.message}")
             Toast.makeText(context, "Ошибка создания ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
@@ -103,12 +88,12 @@ object ShortcutManager {
             }
 
             val removeIntent = Intent("com.android.launcher.action.UNINSTALL_SHORTCUT").apply {
-                setPackage("com.miui.home")
                 putExtra(Intent.EXTRA_SHORTCUT_NAME, scriptName)
                 putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
                 putExtra("duplicate", false)
             }
 
+            Log.d("ShortcutManager", "Deleting shortcut: name=$scriptName, path=$scriptPath")
             context.sendBroadcast(removeIntent)
 
             try {
@@ -119,7 +104,7 @@ object ShortcutManager {
                 }
                 context.sendBroadcast(removeIntent2)
             } catch (e: Exception) {
-                // Игнорируем, если не поддерживается
+                Log.e("ShortcutManager", "MIUI shortcut removal failed: ${e.message}")
             }
 
             val hasPermission = context.checkPermission(
@@ -131,7 +116,10 @@ object ShortcutManager {
             Toast.makeText(context,
                 "Команды удаления отправлены. Разрешение: $hasPermission",
                 Toast.LENGTH_LONG).show()
+
+            IniHelper.updateScriptConfig(scriptName, IniHelper.getScriptConfig(scriptName).copy(hasShortcut = false))
         } catch (e: Exception) {
+            Log.e("ShortcutManager", "Failed to delete shortcut: ${e.message}")
             Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }

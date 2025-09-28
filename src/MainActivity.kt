@@ -1,4 +1,3 @@
-// MainActivity.kt
 package com.yourcompany.yourapp5
 
 import android.app.Activity
@@ -7,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
+import android.util.Log
 import android.view.Gravity
 import android.widget.Button
 import android.widget.EditText
@@ -52,12 +52,8 @@ class MainActivity : Activity() {
             setOnClickListener {
                 val scriptName = "UpdateWDS"
                 val scriptPath = "${Environment.getExternalStorageDirectory()}/MyScripts/UpdateWDS.sh"
-                ShortcutManager.createShortcut(
-                    this@MainActivity,
-                    scriptName,
-                    scriptPath,
-                    "Terminal.png" // Жёстко заданная иконка, как было в TermuxHelper
-                )
+                Log.d("MainActivity", "Creating shortcut: name=$scriptName, path=$scriptPath, icon=Terminal.png")
+                ShortcutManager.createShortcut(this@MainActivity, scriptName, scriptPath, "Terminal.png")
             }
         }
 
