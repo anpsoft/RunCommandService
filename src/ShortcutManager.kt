@@ -41,7 +41,6 @@ fun createShortcut(context: Context, scriptName: String, scriptPath: String, ico
                     val bitmap = BitmapFactory.decodeFile(iconFile.absolutePath)
                     if (bitmap != null) {
                         putExtra(Intent.EXTRA_SHORTCUT_ICON, bitmap)
-                        bitmap.recycle()
                     } else {
                         Log.w("ShortcutManager", "Failed to decode bitmap, using default")
                         putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
@@ -67,6 +66,8 @@ fun createShortcut(context: Context, scriptName: String, scriptPath: String, ico
         Toast.makeText(context, "Ошибка создания ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
     }
 }
+
+
 
     fun showManualDeleteDialog(context: Context, scriptName: String) {
         val config = IniHelper.getScriptConfig(scriptName)
