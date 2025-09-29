@@ -51,6 +51,10 @@ if (iconName.isNotEmpty()) {
             val safeBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(safeBitmap)
             val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+            
+            // сначала заливаем фон чёрным
+    canvas.drawColor(Color.BLACK)
+    
             canvas.drawBitmap(bitmap, 0f, 0f, paint)
 
             putExtra(Intent.EXTRA_SHORTCUT_ICON, safeBitmap)
