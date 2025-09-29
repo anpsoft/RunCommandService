@@ -34,34 +34,47 @@ object ShortcutManager {
                 putExtra(Intent.EXTRA_SHORTCUT_NAME, displayName)
                 putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
                 
-                if (iconName.isNotEmpty()) {
-                    val iconFile = File(IniHelper.getIconsDir(), iconName)
-                    if (iconFile.exists() && (iconName.endsWith(".png") || iconName.endsWith(".jpg"))) {
-                        Log.d("ShortcutManager", "Using custom icon file: ${iconFile.absolutePath}")
-                        
-                        val options = BitmapFactory.Options().apply {
-                            inPreferredConfig = Bitmap.Config.ARGB_8888
-                        }
-                        val bitmap = BitmapFactory.decodeFile(iconFile.absolutePath, options)
-                        
+if (iconName.isNotEmpty()) {
+    val iconFile = File(IniHelper.getIconsDir(), iconName)
+    if (iconFile.exists() && (iconName.endsWith(".png", true) || iconName.endsWith(".jpg", true))) {
+        Log.d("ShortcutManager", "Using custom icon file: ${iconFile.absolutePath}")
 
-                        if (bitmap != null) {
-                            putExtra(Intent.EXTRA_SHORTCUT_ICON, bitmap)
-                            } else {
-                            Log.w("ShortcutManager", "Failed to decode bitmap, using default")
-                            putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
-                            Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_no_icon))
-                        }
-                        } else {
-                        Log.w("ShortcutManager", "Icon file not found or invalid, using default")
-                        putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
-                        Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_no_icon))
-                    }
-                    } else {
-                    Log.d("ShortcutManager", "No icon specified, using default")
-                    putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
-                    Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_no_icon))
-                }
+        val options = BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.ARGB_8888 }
+        val bitmap = BitmapFactory.decodeFile(iconFile.absolutePath, options)
+
+        if (bitmap != null) {
+            // принудительно копируем в ARGB_8888, чтобы альфа сохранилась
+            val safeBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(safeBitmap)
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+            canvas.drawBitmap(bitmap, 0f, 0f, paint)
+
+            putExtra(Intent.EXTRA_SHORTCUT_ICON, safeBitmap)
+        } else {
+            Log.w("ShortcutManager", "Failed to decode bitmap, using default")
+            putExtra(
+                Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
+                Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_no_icon)
+            )
+        }
+    } else {
+        Log.w("ShortcutManager", "Icon file not found or invalid, using default")
+        putExtra(
+            Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
+            Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_no_icon)
+        )
+    }
+} else {
+    Log.d("ShortcutManager", "No icon specified, using default")
+    putExtra(
+        Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
+        Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_no_icon)
+    )
+}
+
+                
+                
+                
             }
             
             context.sendBroadcast(addIntent)
