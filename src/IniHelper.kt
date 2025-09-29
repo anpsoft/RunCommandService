@@ -1,18 +1,18 @@
 package com.yourcompany.yourapp6
 
 import android.content.Context
-import org.ini4j.Ini
 import java.io.File
 import android.app.AlertDialog
 import android.util.Log
 
 object IniHelper {
     private lateinit var iniFile: File
-    private val ini = Ini()
+    private val sections = mutableMapOf<String, MutableMap<String, String>>()
     private const val MAX_INI_SIZE = 1024 // 1 KB
     private var appContext: Context? = null
 
-    private fun checkIniSize() {
+    // Закомментировано - не работает
+    /*private fun checkIniSize() {
         if (iniFile.exists() && iniFile.length() > MAX_INI_SIZE) {
             appContext?.let { ctx ->
                 AlertDialog.Builder(ctx)
@@ -22,31 +22,66 @@ object IniHelper {
                     .show()
             } ?: Log.e("IniHelper", "INI file size exceeds 1 KB, context not initialized.")
         }
+    }*/
+
+    private fun loadIni() {
+        sections.clear()
+        if (!iniFile.exists()) return
+
+        try {
+            var currentSection = ""
+            iniFile.forEachLine { line ->
+                val trimmed = line.trim()
+                when {
+                    trimmed.isEmpty() || trimmed.startsWith("#") || trimmed.startsWith(";") -> {
+                        // Пропускаем пустые строки и комментарии
+                    }
+                    trimmed.startsWith("[") && trimmed.endsWith("]") -> {
+                        currentSection = trimmed.substring(1, trimmed.length - 1)
+                        sections.putIfAbsent(currentSection, mutableMapOf())
+                    }
+                    trimmed.contains("=") && currentSection.isNotEmpty() -> {
+                        val parts = trimmed.split("=", limit = 2)
+                        if (parts.size == 2) {
+                            sections[currentSection]?.put(parts[0].trim(), parts[1].trim())
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("IniHelper", "Failed to load ini file: ${e.message}")
+        }
     }
 
-    private fun readIni(sectionName: String, key: String, defaultValue: String): String {
-        val section = ini[sectionName]
-        return section?.get(key) ?: defaultValue
-    }
-
-    private fun writeIni(sectionName: String, key: String, value: String) {
-        synchronized(ini) {
-            val section = ini[sectionName] ?: ini.add(sectionName)
-            if (section[key] != value) {
-                section.put(key, value)
-                save()
+    private fun saveIni() {
+        synchronized(sections) {
+            try {
+                iniFile.parentFile?.mkdirs()
+                iniFile.writeText(buildString {
+                    sections.forEach { (sectionName, keys) ->
+                        append("[$sectionName]\n")
+                        keys.forEach { (key, value) ->
+                            append("$key=$value\n")
+                        }
+                        append("\n")
+                    }
+                })
+                // checkIniSize() // Закомментировано
+            } catch (e: Exception) {
+                Log.e("IniHelper", "Failed to save ini file: ${e.message}")
             }
         }
     }
 
-    private fun save() {
-        synchronized(ini) {
-            try {
-                ini.store(iniFile)
-                checkIniSize()
-            } catch (e: Exception) {
-                Log.e("IniHelper", "Failed to save ini file: ${e.message}")
-            }
+    private fun readIni(sectionName: String, key: String, defaultValue: String): String {
+        return sections[sectionName]?.get(key) ?: defaultValue
+    }
+
+    private fun writeIni(sectionName: String, key: String, value: String) {
+        synchronized(sections) {
+            sections.putIfAbsent(sectionName, mutableMapOf())
+            sections[sectionName]?.put(key, value)
+            saveIni()
         }
     }
 
@@ -62,13 +97,7 @@ object IniHelper {
         iniFile = File(scriptsDir, "scripts.ini")
         iniFile.parentFile?.mkdirs()
 
-        if (iniFile.exists()) {
-            try {
-                ini.load(iniFile)
-            } catch (e: Exception) {
-                Log.e("IniHelper", "Failed to load ini file: ${e.message}")
-            }
-        }
+        loadIni()
 
         val iniScripts = readIni("settings", "scripts_dir", defaultScriptsDir)
         if (iniScripts != defaultScriptsDir) {
@@ -81,6 +110,7 @@ object IniHelper {
             prefs.edit().putString("icons_dir", iconsDir).apply()
         }
         iniFile = File(scriptsDir, "scripts.ini")
+        loadIni()
     }
 
     fun getScriptsDir(): String {
@@ -91,17 +121,17 @@ object IniHelper {
         return readIni("settings", "icons_dir", "/sdcard/MyScripts/icons")
     }
 
-    fun updateSettings(/* context: Context,  */scriptsDir: String, iconsDir: String) {
+    fun updateSettings(scriptsDir: String, iconsDir: String) {
         val prefs = appContext?.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) ?: return
         prefs.edit().putString("scripts_dir", scriptsDir).putString("icons_dir", iconsDir).apply()
         writeIni("settings", "scripts_dir", scriptsDir)
         writeIni("settings", "icons_dir", iconsDir)
         iniFile = File(scriptsDir, "scripts.ini")
+        loadIni()
     }
 
     fun getScriptConfig(scriptName: String): ScriptConfig {
-        val section = ini[scriptName]
-        return if (section != null) {
+        return if (sections.containsKey(scriptName)) {
             ScriptConfig(
                 name = readIni(scriptName, "name", ""),
                 description = readIni(scriptName, "description", ""),
@@ -127,13 +157,17 @@ object IniHelper {
     }
 
     fun renameScriptConfig(oldName: String, newName: String, config: ScriptConfig) {
-        ini.remove(oldName)
-        updateScriptConfig(newName, config)
+        synchronized(sections) {
+            sections.remove(oldName)
+            updateScriptConfig(newName, config)
+        }
     }
 
     fun deleteScriptConfig(scriptName: String) {
-        ini.remove(scriptName)
-        save()
+        synchronized(sections) {
+            sections.remove(scriptName)
+            saveIni()
+        }
     }
 
     fun cleanupOrphanedConfigs() {
@@ -141,21 +175,17 @@ object IniHelper {
         val existingFiles = scriptsDir.listFiles { _, name -> name.endsWith(".sh") }
             ?.map { it.nameWithoutExtension }?.toSet() ?: emptySet()
 
-        val sectionsToRemove = mutableListOf<String>()
-        for (sectionName in ini.keys) {
-            if (!existingFiles.contains(sectionName) && sectionName != "settings") {
-                sectionsToRemove.add(sectionName)
+        synchronized(sections) {
+            val sectionsToRemove = sections.keys.filter { it != "settings" && !existingFiles.contains(it) }
+            sectionsToRemove.forEach { sections.remove(it) }
+            if (sectionsToRemove.isNotEmpty()) {
+                saveIni()
             }
-        }
-
-        sectionsToRemove.forEach { ini.remove(it) }
-        if (sectionsToRemove.isNotEmpty()) {
-            save()
         }
     }
 
     fun createShortcutsForExisting(context: Context) {
-        for (sectionName in ini.keys) {
+        for (sectionName in sections.keys) {
             if (sectionName == "settings") continue
             val config = getScriptConfig(sectionName)
             if (config.hasShortcut) {
