@@ -51,27 +51,24 @@ fun createShortcut(context: Context, scriptName: String, scriptPath: String, ico
                     val options = BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.ARGB_8888 }
                     val bitmap = BitmapFactory.decodeFile(iconFile.absolutePath, options)
 
-                    if (bitmap != null) {
-                        val safeBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
-                        val canvas = Canvas(safeBitmap)
+if (bitmap != null) {
+    // копируем в ARGB_8888
+    val result = bitmap.copy(Bitmap.Config.ARGB_8888, true)
+    val canvas = Canvas(result)
 
-                        // рисуем оригинал
-                        canvas.drawBitmap(bitmap, 0f, 0f, null)
+    // чёрный фон под прозрачность
+    canvas.drawColor(Color.BLACK, PorterDuff.Mode.DST_OVER)
 
-                        // заливаем чёрным под прозрачные места
-                        val paint = Paint()
-                        paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OVER)
-                        canvas.drawColor(Color.BLACK, PorterDuff.Mode.DST_OVER)
-                        paint.xfermode = null
-
-                        putExtra(Intent.EXTRA_SHORTCUT_ICON, safeBitmap)
-                    } else {
-                        Log.w("ShortcutManager", "Failed to decode bitmap, using default")
-                        putExtra(
-                            Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
-                            Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_no_icon)
-                        )
-                    }
+    putExtra(Intent.EXTRA_SHORTCUT_ICON, result)
+} else {
+    Log.w("ShortcutManager", "Failed to decode bitmap, using default")
+    putExtra(
+        Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
+        Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_no_icon)
+    )
+}
+                    
+                    
                 } else {
                     Log.w("ShortcutManager", "Icon file not found or invalid, using default")
                     putExtra(
