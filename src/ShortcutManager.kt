@@ -31,52 +31,45 @@ object ShortcutManager {
         try {
             val config = IniHelper.getScriptConfig(scriptName)
             val displayName = config.name.ifEmpty { scriptName }
-
+            
             val shortcutIntent = Intent().apply {
                 component = ComponentName(context.packageName, "${context.packageName}.ShortcutActivity")
                 action = "RUN_SCRIPT"
                 putExtra("script_path", scriptPath)
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
-
+            
             val addIntent = Intent("com.android.launcher.action.INSTALL_SHORTCUT").apply {
                 putExtra(Intent.EXTRA_SHORTCUT_NAME, displayName)
                 putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent)
-
+                
                 if (iconName.isNotEmpty()) {
                     val iconFile = File(IniHelper.getIconsDir(), iconName)
                     if (iconFile.exists() && (iconName.endsWith(".png", true) || iconName.endsWith(".jpg", true))) {
                         Log.d("ShortcutManager", "Using custom icon file: ${iconFile.absolutePath}")
-
+                        
                         val options = BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.ARGB_8888 }
-                        val src = BitmapFactory.decodeFile(iconFile.absolutePath, options)
-
-                        if (src != null) {
-                            // рисуем на чёрном фоне
-                            val temp = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
-                            val canvas = Canvas(temp)
-                            canvas.drawColor(Color.BLACK) // фон
-                            canvas.drawBitmap(src, 0f, 0f, Paint(Paint.ANTI_ALIAS_FLAG))
-
-                            // убираем альфу окончательно
-                            val out = temp.copy(Bitmap.Config.RGB_565, false)
-
-                            putExtra(Intent.EXTRA_SHORTCUT_ICON, out)
-                        } else {
+                        val bitmap = BitmapFactory.decodeFile(iconFile.absolutePath, options)
+                        
+                        if (bitmap != null) {
+                            // ручная замена прозрачности на черный
+                            val safeBitmap = makeTransparentBlack(bitmap)
+                            putExtra(Intent.EXTRA_SHORTCUT_ICON, safeBitmap)
+                            } else {
                             Log.w("ShortcutManager", "Failed to decode bitmap, using default")
                             putExtra(
                                 Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
                                 Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_no_icon)
                             )
                         }
-                    } else {
+                        } else {
                         Log.w("ShortcutManager", "Icon file not found or invalid, using default")
                         putExtra(
                             Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
                             Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_no_icon)
                         )
                     }
-                } else {
+                    } else {
                     Log.d("ShortcutManager", "No icon specified, using default")
                     putExtra(
                         Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
@@ -84,16 +77,30 @@ object ShortcutManager {
                     )
                 }
             }
-
+            
             context.sendBroadcast(addIntent)
             IniHelper.updateScriptConfig(scriptName, config.copy(hasShortcut = true))
             Toast.makeText(context, "Ярлык создан", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
+            } catch (e: Exception) {
             Log.e("ShortcutManager", "Failed to create shortcut: ${e.message}")
             Toast.makeText(context, "Ошибка создания ярлыка: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
     
+    // вспомогательная функция
+    private fun makeTransparentBlack(source: Bitmap): Bitmap {
+        val result = source.copy(Bitmap.Config.ARGB_8888, true)
+        for (x in 0 until result.width) {
+            for (y in 0 until result.height) {
+                val pixel = result.getPixel(x, y)
+                val alpha = (pixel shr 24) and 0xff
+                if (alpha < 255) {
+                    result.setPixel(x, y, Color.BLACK)
+                }
+            }
+        }
+        return result
+    }
     
     
     
