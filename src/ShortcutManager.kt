@@ -48,20 +48,18 @@ object ShortcutManager {
                     if (iconFile.exists() && (iconName.endsWith(".png", true) || iconName.endsWith(".jpg", true))) {
                         Log.d("ShortcutManager", "Using custom icon file: ${iconFile.absolutePath}")
                         
-                        val options = BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.ARGB_8888 }
-                        val bitmap = BitmapFactory.decodeFile(iconFile.absolutePath, options)
-                        
+                        val bitmap = BitmapFactory.decodeFile(iconFile.absolutePath)
                         if (bitmap != null) {
-                            // ручная замена прозрачности на черный
-                            val safeBitmap = makeTransparentBlack(bitmap)
+                            val safeBitmap = prepareShortcutIcon(bitmap)
                             putExtra(Intent.EXTRA_SHORTCUT_ICON, safeBitmap)
                             } else {
-                            Log.w("ShortcutManager", "Failed to decode bitmap, using default")
                             putExtra(
                                 Intent.EXTRA_SHORTCUT_ICON_RESOURCE,
                                 Intent.ShortcutIconResource.fromContext(context, R.mipmap.ic_no_icon)
                             )
                         }
+                        
+                        
                         } else {
                         Log.w("ShortcutManager", "Icon file not found or invalid, using default")
                         putExtra(
@@ -87,20 +85,32 @@ object ShortcutManager {
         }
     }
     
-    // вспомогательная функция
-    private fun makeTransparentBlack(source: Bitmap): Bitmap {
-        val result = source.copy(Bitmap.Config.ARGB_8888, true)
+    /*     // вспомогательная функция подготовки иконки
+        private fun prepareShortcutIcon(bitmap: Bitmap): Bitmap {
+        val result = bitmap.copy(Bitmap.Config.ARGB_8888, true)
+        
         for (x in 0 until result.width) {
-            for (y in 0 until result.height) {
-                val pixel = result.getPixel(x, y)
-                val alpha = (pixel shr 24) and 0xff
-                if (alpha < 255) {
-                    result.setPixel(x, y, Color.BLACK)
-                }
-            }
+        for (y in 0 until result.height) {
+        val pixel = result.getPixel(x, y)
+        val alpha = (pixel shr 24) and 0xff
+        if (alpha < 255) {
+        result.setPixel(x, y, Color.BLACK)
         }
+        }
+        }
+        
+        return result
+        }
+    */
+    
+    
+    private fun prepareShortcutIcon(bitmap: Bitmap): Bitmap {
+        // копируем в ARGB_8888, чтобы альфа точно была
+        val result = bitmap.copy(Bitmap.Config.ARGB_8888, true)
+        result.setHasAlpha(true)
         return result
     }
+    
     
     
     
