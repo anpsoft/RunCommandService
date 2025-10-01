@@ -85,23 +85,6 @@ object ShortcutManager {
         }
     }
     
-    /*     // вспомогательная функция подготовки иконки
-        private fun prepareShortcutIcon(bitmap: Bitmap): Bitmap {
-        val result = bitmap.copy(Bitmap.Config.ARGB_8888, true)
-        
-        for (x in 0 until result.width) {
-        for (y in 0 until result.height) {
-        val pixel = result.getPixel(x, y)
-        val alpha = (pixel shr 24) and 0xff
-        if (alpha < 255) {
-        result.setPixel(x, y, Color.BLACK)
-        }
-        }
-        }
-        
-        return result
-        }
-    */
     
     
     private fun prepareShortcutIcon(bitmap: Bitmap): Bitmap {

@@ -20,6 +20,7 @@ class ShortcutActivity : Activity() {
             scriptPath?.let { 
                 val file = File(it)
                 val scriptName = file.nameWithoutExtension
+                IniHelper.init(this)
                 val config = IniHelper.getScriptConfig(scriptName)
                 
                 if (!file.exists() || !config.isActive || !config.hasShortcut) {
