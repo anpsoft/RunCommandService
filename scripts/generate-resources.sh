@@ -18,7 +18,7 @@ echo "APP_NAME=$APP_NAME"
 cat << EOF > app/src/main/AndroidManifest.xml
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-package="$PACKAGE">
+    package="$PACKAGE">
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT"/>
@@ -31,22 +31,26 @@ package="$PACKAGE">
         android:theme="@android:style/Theme.DeviceDefault.Light">
 EOF
 
-# Получаем список активностей из app.ini, фильтруя по суффиксу Activity
+# Получаем список активностей из app.ini
 activities=$(awk '/^\[.*Activity\]/{print substr($0,2,length($0)-2)}' app.ini)
 
-# Добавляем активности из app.ini
+# Добавляем активности
 for activity in $activities; do
     enabled=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^enabled=/{print \$0}" app.ini | cut -d'=' -f2)
     theme=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^theme=/{print \$0}" app.ini | cut -d'=' -f2)
+    exported=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^exported=/{print \$0}" app.ini | cut -d'=' -f2)
+    intentFilter=$(awk "/^\[$activity\]/{flag=1; next} /^\[/{flag=0} flag && /^intentFilter=/{print \$0}" app.ini | cut -d'=' -f2)
     enabled=${enabled:-"false"}
     theme=${theme:-"DeviceDefault.Light"}
-    echo "🔍 Проверяем $activity: enabled=$enabled, theme=$theme"
+    exported=${exported:-"false"}
+    intentFilter=${intentFilter:-"NONE"}
+    echo "🔍 Проверяем $activity: enabled=$enabled, theme=$theme, exported=$exported, intentFilter=$intentFilter"
     if [ "$enabled" = "true" ]; then
-        if [ "$activity" = "ShortcutActivity" ]; then
+        if [ "$exported" = "true" ] && [ "$intentFilter" = "SHORTCUT" ]; then
             cat << EOF >> app/src/main/AndroidManifest.xml
         <activity
             android:name=".$activity"
-            android:exported="true"
+            android:exported="$exported"
             android:enabled="$enabled"
             android:theme="@android:style/Theme.$theme">
             <intent-filter>
@@ -55,11 +59,11 @@ for activity in $activities; do
             </intent-filter>
         </activity>
 EOF
-        elif [ "$activity" = "PermissionActivity" ]; then
+        elif [ "$exported" = "true" ] && [ "$intentFilter" = "MAIN" ]; then
             cat << EOF >> app/src/main/AndroidManifest.xml
         <activity
             android:name=".$activity"
-            android:exported="true"
+            android:exported="$exported"
             android:enabled="$enabled"
             android:theme="@android:style/Theme.$theme">
             <intent-filter>
@@ -72,7 +76,7 @@ EOF
             cat << EOF >> app/src/main/AndroidManifest.xml
         <activity
             android:name=".$activity"
-            android:exported="false"
+            android:exported="$exported"
             android:enabled="$enabled"
             android:theme="@android:style/Theme.$theme" />
 EOF

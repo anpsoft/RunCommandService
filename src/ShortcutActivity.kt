@@ -11,8 +11,7 @@ class ShortcutActivity : Activity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        
+        IniHelper.init(this) // Инициализация IniHelper
         
         if (intent.action == "RUN_SCRIPT") {
             val scriptPath = intent.getStringExtra("script_path")
@@ -20,27 +19,27 @@ class ShortcutActivity : Activity() {
             scriptPath?.let { 
                 val file = File(it)
                 val scriptName = file.nameWithoutExtension
-                IniHelper.init(this)
                 val config = IniHelper.getScriptConfig(scriptName)
                 
                 if (!file.exists() || !config.isActive || !config.hasShortcut) {
                     showInvalidShortcutDialog(scriptName)
-                    return
+                    return // Не вызываем finish() здесь, ждем действия в диалоге
                 }
                 
                 if (!TermuxHelper.hasPermission(this)) {
                     showPermissionDialog()
-                    return
+                    return // Не вызываем finish() здесь, ждем действия в диалоге
                 }
                 
                 TermuxHelper.startTermuxSilently(this)
                 Thread.sleep(1500)
                 TermuxHelper.sendCommand(this, it, showToast = true)
+                finish() // Завершаем только после успешного выполнения
+            } ?: run {
+                finish() // Если scriptPath null, завершаем
             }
-            
-            finish()
         } else {
-            finish()
+            finish() // Если action не RUN_SCRIPT, завершаем
         }
     }
 
@@ -48,7 +47,17 @@ class ShortcutActivity : Activity() {
         AlertDialog.Builder(this)
             .setTitle("Неактивный ярлык")
             .setMessage("Скрипт '$scriptName' удален или неактивен. Удалите этот ярлык с рабочего стола вручную.")
-            .setPositiveButton("OK") { _, _ ->
+            .setPositiveButton("Перейти к программе") { _, _ ->
+                try {
+                    val intent = Intent(this, MainActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Не удалось открыть приложение: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+                finish()
+            }
+            .setNegativeButton("OK") { _, _ ->
                 finish()
             }
             .setCancelable(false)
