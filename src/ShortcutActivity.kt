@@ -43,26 +43,26 @@ class ShortcutActivity : Activity() {
         }
     }
 
-    private fun showInvalidShortcutDialog(scriptName: String) {
-        AlertDialog.Builder(this)
-            .setTitle("Неактивный ярлык")
-            .setMessage("Скрипт '$scriptName' удален или неактивен. Удалите этот ярлык с рабочего стола вручную.")
-            .setPositiveButton("Перейти к программе") { _, _ ->
-                try {
-                    val intent = Intent(this, MainActivity::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    startActivity(intent)
-                } catch (e: Exception) {
-                    Toast.makeText(this, "Не удалось открыть приложение: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-                finish()
+private fun showInvalidShortcutDialog(scriptName: String) {
+    AlertDialog.Builder(this)
+        .setTitle("Неактивный ярлык")
+        .setMessage("Скрипт '$scriptName' удален или неактивен. Удалите этот ярлык с рабочего стола вручную.")
+        .setPositiveButton("Перейти к программе") { _, _ ->
+            try {
+                val intent = Intent(this, MainActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(this, "Не удалось открыть приложение: ${e.message}", Toast.LENGTH_SHORT).show()
             }
-            .setNegativeButton("OK") { _, _ ->
-                finish()
-            }
-            .setCancelable(false)
-            .show()
-    }    
+            finish()
+        }
+        .setNegativeButton("OK") { _, _ ->
+            finishAffinity() // Завершает все активности, возвращает на рабочий стол
+        }
+        .setCancelable(false)
+        .show()
+}  
     
     private fun showPermissionDialog() {
         AlertDialog.Builder(this)
