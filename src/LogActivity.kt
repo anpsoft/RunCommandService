@@ -69,7 +69,12 @@ class LogActivity : Activity() {
 
     private fun loadLogs() {
         try {
-            val process = Runtime.getRuntime().exec("logcat -d")
+            // val process = Runtime.getRuntime().exec("logcat -d")
+            
+            val packageName = packageName
+            val command = arrayOf("/system/bin/sh", "-c", "logcat -d | grep \"$packageName\"")
+            val process = Runtime.getRuntime().exec(command)
+            
             val reader = BufferedReader(InputStreamReader(process.inputStream))
             val logs = StringBuilder()
             reader.useLines { lines -> lines.forEach { logs.append(it).append("\n") } }
